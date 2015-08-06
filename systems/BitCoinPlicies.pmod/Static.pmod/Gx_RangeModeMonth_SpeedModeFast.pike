@@ -1,1 +1,0 @@
-inherit BitCoinPlicies.Class.Gx_RangeModeMonth_SpeedModeFast._class.Static;

@@ -1,1 +1,0 @@
-inherit BitCoin.Class.Requester_ApiModeOkCoin_AbstraceLayerModeOkCoin._class.Static;

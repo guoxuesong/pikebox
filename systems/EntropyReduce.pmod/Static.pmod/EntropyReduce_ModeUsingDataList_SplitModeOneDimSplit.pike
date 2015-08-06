@@ -1,1 +1,0 @@
-inherit EntropyReduce.Class.EntropyReduce_ModeUsingDataList_SplitModeOneDimSplit._class.Static;

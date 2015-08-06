@@ -1,1 +1,0 @@
-inherit BitCoinPlicies.Class.Dx_RangeModeWeek_SpeedModeSlow_DeltaSpeedModeDeltaSlow._class.Static;

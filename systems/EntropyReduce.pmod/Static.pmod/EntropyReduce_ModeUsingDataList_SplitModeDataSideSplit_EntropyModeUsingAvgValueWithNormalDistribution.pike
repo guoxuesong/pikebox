@@ -1,1 +1,0 @@
-inherit EntropyReduce.Class.EntropyReduce_ModeUsingDataList_SplitModeDataSideSplit_EntropyModeUsingAvgValueWithNormalDistribution._class.Static;

@@ -1,1 +1,0 @@
-inherit BitCoin.Class.Requester_AuthModeHuobi_ApiModeHuobi._class.Static;
