@@ -1,0 +1,1 @@
+inherit BitCoin.Class.Requester_ApiModeBtcChina_AbstraceLayerModeBtcChina._class.Static;

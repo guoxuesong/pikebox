@@ -1,0 +1,31 @@
+void handle_connect(object file0)
+{
+	object file=Stdio.FILE();
+	file->assign(file0);
+	string line=file->gets();
+	while(line){
+		write("%s\n",line);
+		if(has_prefix(line,"gvim ")){
+			int res=Process.system(line);
+			write(sprintf("%d\n",res));
+			file->write(sprintf("%d\n",res));
+		}else{
+			write(sprintf("-1\n"));
+			file->write(sprintf("-1\n"));
+		}
+		line=file->gets();
+	}
+}
+int main(int argc,array argv)
+{
+	string ip="$(WIN_GVIM_IP)";
+	int p=$(WIN_GVIM_PORT);
+	write("listen %s:%d ...\n",ip,p);
+	object port=Stdio.Port(p,0,ip);
+	object file=port->accept();
+	while(file)
+	{
+		Thread.Thread(handle_connect,file);
+		file=port->accept();
+	}
+}

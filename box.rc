@@ -1,0 +1,31 @@
+. ~/.bashrc
+export PS1='\033[1;33;40m[PikeBox \u@\h:\w]\033[0m\n\$ '
+export PIKEBOX=$HOME/PikeBox
+alias vi=~/PikeBox/bin/vi.pike
+alias ctime=~/PikeBox/bin/ctime.pike
+alias hex2string=~/PikeBox/bin/hex2string.pike
+alias string2hex=~/PikeBox/bin/string2hex.pike
+alias dump=~/PikeBox/bin/dump.pike
+alias run=~/PikeBox/bin/run.pike
+alias tex=~/PikeBox/bin/tex.pike
+alias home="cd ~/PikeBox"
+
+export PIKE_INCLUDE_PATH=$PIKEBOX/include
+export PIKE_MODULE_PATH=$PIKEBOX/modules:$PIKEBOX/systems
+
+#Use following settings only if:
+# * you run PikeBox in vbox vm
+# * the host ip is 192.168.56.1 that the guest os can see
+# * f: of host os is used as a shared folder and mounted at /media/sf_SHARE
+# * you installed gvim in host os
+#after run box.sh, f:/PikeBox/build/gvim-server.pike will be created, 
+#run it in host os, that will handle gvim requests. 
+#After you changed this file, you need to exit and sh box.sh to active 
+#the new settings
+
+alias gvim=~/PikeBox/bin/gvim.pike
+export WIN_GVIM_IP=192.168.56.1
+export WIN_GVIM_PORT=9999
+export WIN_GVIM_LINUX_PATH=/media/sf_SHARE/
+export WIN_GVIM_WINDOWS_PATH=f:/
+cat ~/PikeBox/win/gvim-server.pike.template |sed s/\\$\(WIN_GVIM_IP\)/$WIN_GVIM_IP/g|sed s/\\$\(WIN_GVIM_PORT\)/$WIN_GVIM_PORT/g >~/PikeBox/build/gvim-server.pike

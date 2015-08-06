@@ -1,0 +1,28 @@
+
+
+<autodoc>
+
+<namespace name='predef'>
+
+<class name='dbase'><docgroup homogen-name='query' homogen-type='method'><doc><text><p>query</p>
+</text></doc>
+<method name='query'><source-position file='inherit/dbase.pike' first-line='14'/>
+<arguments><argument name='key'><type><array/></type></argument></arguments>
+<returntype><mixed/></returntype>
+</method>
+</docgroup>
+<docgroup homogen-name='set' homogen-type='method'><doc><text><p>set</p>
+</text></doc>
+<method name='set'><source-position file='inherit/dbase.pike' first-line='44'/>
+<arguments><argument name='key'><type><array/></type></argument><argument name='val'><type><mixed/></type></argument></arguments>
+<returntype><mixed/></returntype>
+</method>
+</docgroup>
+<docgroup homogen-name='delete' homogen-type='method'><doc><text><p>delete</p>
+</text></doc>
+<method name='delete'><source-position file='inherit/dbase.pike' first-line='105'/>
+<arguments><argument name='key'><type><array/></type></argument></arguments>
+<returntype><mixed/></returntype>
+</method>
+</docgroup>
+</class></namespace></autodoc>

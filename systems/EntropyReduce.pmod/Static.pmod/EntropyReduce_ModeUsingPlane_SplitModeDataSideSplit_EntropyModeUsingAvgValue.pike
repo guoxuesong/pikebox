@@ -1,0 +1,1 @@
+inherit EntropyReduce.Class.EntropyReduce_ModeUsingPlane_SplitModeDataSideSplit_EntropyModeUsingAvgValue._class.Static;

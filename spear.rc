@@ -1,0 +1,5 @@
+#!/bin/sh
+alias run2="rm $HOME/sopath/*;spear --path=$HOME/sopath $HOME/PikeBox/bin/run.pike"
+alias run="spear --path=$HOME/sopath $HOME/PikeBox/bin/run.pike"
+export PIKE_MODULE_PATH=$PIKEBOX/modules:$PIKEBOX/systems:$PIKEBOX/spear-modules
+export USING_SPEAR=1

@@ -1,0 +1,4 @@
+warning: function ./test.m shadows a core library function
+error: openclcmd: Runtime error! (See error message above)
+error: called from:
+error:   /home/work/PikeBox/spear-modules/Octave.pmod/opencl-toolbox/test2.m at line 13, column 1

@@ -1,0 +1,10 @@
+#! /bin/env pike
+#include <args.h>
+#include <awl.h>
+int main(int argc,array argv)
+{
+	THIS_SESSIOND->this_session()->show(
+				WIDGETD->text(argv[1..]*" "),
+			);
+}
+

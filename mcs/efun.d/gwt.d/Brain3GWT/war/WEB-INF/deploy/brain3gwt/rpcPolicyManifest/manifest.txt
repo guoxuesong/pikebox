@@ -1,0 +1,3 @@
+# Module brain3gwt
+# RPC service class, partial path of RPC policy file
+com.pikecross.brain3.client.GreetingService, ABEFC288F1AB166E68124827349914F2.gwt.rpc

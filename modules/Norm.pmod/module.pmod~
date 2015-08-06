@@ -1,0 +1,12 @@
+float floor(float v,int n)
+{
+	return predef::floor(v*pow(10,n))/pow(10,n);
+}
+float ceil(float v,int n)
+{
+	return predef::ceil(v*pow(10,n))/pow(10,n);
+}
+float round(float v,int n)
+{
+	return predef::round(v*pow(10,n))/pow(10,n);
+}

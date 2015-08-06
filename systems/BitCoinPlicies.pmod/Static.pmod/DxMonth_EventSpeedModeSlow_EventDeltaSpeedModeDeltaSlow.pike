@@ -1,0 +1,1 @@
+inherit BitCoinPlicies.Class.DxMonth_EventSpeedModeSlow_EventDeltaSpeedModeDeltaSlow._class.Static;

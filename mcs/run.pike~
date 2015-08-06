@@ -1,0 +1,1138 @@
+#include "include/defines.h"
+
+inherit "inherit/cache.pike";
+
+void werror(mixed ... args)
+{
+#ifndef WERROR_OPT
+	predef::werror(@args);
+	Stdio.append_file("error.log",sprintf(@args));
+	chown("error.log",working_uid,working_gid);
+#endif
+}
+
+
+
+#ifdef PIKECROSS_DUMP
+constant IGNORE_DUMP=0;
+#else
+constant IGNORE_DUMP=1;
+#endif
+
+int working_uid=-1;
+int working_gid=-1;
+
+function error_notify;
+
+object real_object;
+constant is_loader=1;
+
+#ifdef __NT__
+string cwd=replace(getcwd(),"\\","/");
+#else
+string cwd=getcwd();
+#endif
+private string WORKING_DIR=cwd;
+mapping path2object=([]);
+mapping features=([]);
+mapping feature_data=([]);
+array features_loading=({});
+//mapping name2program=([]);
+/*
+string pmodopath(string pikepath)
+{
+	ASSERT(has_prefix(pikepath,cwd));
+	string rpath=pikepath[sizeof(cwd)..];
+	string modname=replace(replace(rpath,".pike",""),(["/":"_",".":"_"]));
+	return combine_path(pikepath+".pike-modules",modname+".pmod.o");
+}
+string pmodpath(string pikepath)
+{
+	ASSERT(has_prefix(pikepath,cwd));
+	string rpath=pikepath[sizeof(cwd)..];
+	string modname=replace(replace(rpath,".pike",""),(["/":"_",".":"_"]));
+	return combine_path(pikepath+".pike-modules",modname+".pmod");
+}
+string pmodname(string pikepath)
+{
+	ASSERT(has_prefix(pikepath,cwd));
+	string rpath=pikepath[sizeof(cwd)..];
+	string modname=replace(replace(rpath,".pike",""),(["/":"_",".":"_"]));
+	return modname;
+}*/
+
+//! @decl program load_feature(string name)
+//! @appears load_feature
+//!	Load a MCS FEATURE. A MCS FEATURE is a Pike file with extra support of keyword MIXIN. MIXIN is just like class besides the following facts:
+//!
+//!     装在一个MCS功能模块，一个MCS功能模块是一个Pike文件，在这个Pike文件中可以使用关键字MIXIN，MIXIN是关键字class的别名，并提供以下功能：
+//!
+//!	When a MCS system IMPORT a FEATURE, for every MIXIN in the FEATURE if there is a class in the in the MCS system, which has the same name of the MIXIN, the class in the MCS system will inherit the MIXIN.
+//!
+//!     当一个MCS系统IMPORT了一个MCS功能模块，如果MCS系统中有和功能模块中的MIXIN同名的class，该class将继承该MIXIN。
+//!
+//! @param name
+//!
+//!	Name of the FEAUTRE, always be capital and with a prefix of "F_", for example F_EXAMPLE 
+//!
+//!	功能模块的名字，必须大写，并且以“F_”开始，例如 F_EXAMPLE
+//! 
+//! @note
+//!
+//!	The description file path of F_EXAMPLE is "features/example.pike". Before loading the FEATURE F_EXAMPLE, all the file has a suffix of ".pike" in "features/example.d" 
+//!     will be loaded using load_system with noaddconst=0, that means all the classes would be exported as constant and can be used in "features/example.pike" directly.
+//!
+//!	功能模块 F_EXAMPLE 的描述文件的路径是“features/example.pike”。当功能模块 F_EXAMPLE 被装载前，目录“features/example.d”中所有.pike文件将会被当作MCS系统装载，
+//!	并且其中所有的类定义都被暴露为常数，“features/example.pike”可以直接使用这些类定义。
+	program load_feature(string name)/*{{{*/
+	{
+		if(features[name]==0){
+			if(search(features_loading,name)>=0){
+				error_notify("ERROR: load_feature/load_system 发生循环引用，请检查是否有某功能.d文件夹中的附加部件直接或间接引用了该功能本身。\n%s\n",replace(features_loading,name,"*"+name+"*")*" ");
+				exit(1);
+			}
+			features_loading+=({name});
+			//string dpath="feature/"+lower_case(name[2..])+".d";
+			//werror("dpath=%s\n",dpath);
+			//mkdir(dpath+"/pike-modules");
+			//werror("add_module_path: %s\n",dpath+"/pike-modules");
+			//master()->add_module_path(dpath+"/pike-modules");
+			string f=lower_case(name[2..]+".pike");
+			void load_daemons(string dpath){/*{{{*/
+				foreach(get_dir(dpath)||({}),string file){
+					if(has_suffix(file,".pike")){
+						string pname=upper_case((file/".")[..<1]*"."+"p");
+						object d=load_system(Stdio.append_path(dpath,file));
+						string name=upper_case((file/".")[..<1]*"."+"d");
+						add_constant(name,d);
+						add_constant(name+"_PROGRAM",object_program(d));
+					}
+				}
+			};/*}}}*/
+			load_daemons("feature/"+lower_case(name[2..])+".d");
+			load_daemons("feature.tmp/"+lower_case(name[2..])+".d");
+			//program d=(program)("feature.work/"+f);
+			program d;
+			if(!IGNORE_DUMP){
+				if(Stdio.is_file(Stdio.append_path(cwd,"feature/"+f+".o"))){
+					d=decode_value(Stdio.read_file(Stdio.append_path(cwd,"feature/"+f+".o")),Decoder());
+				}
+			}
+			if(d==0){
+				d=compile_string(feature_data[f]/*Stdio.read_file("feature.work/"+f)*/,Stdio.append_path(cwd,"feature/"+f));
+				if(!IGNORE_DUMP){
+					Stdio.write_file(Stdio.append_path(cwd,"feature/"+f+".o"),encode_value(d,Encoder(d)));
+				}
+			}
+			features[name]=d;
+			add_constant(name,d);
+			werror("Info: add_constant %s\n",name);
+			//foreach(indices(d),string k){
+				//if(name=="F_WIDGET")
+					//werror("F_WIDGET: %s\n",k);
+				/*
+				if(programp(d[k])){
+					add_constant(k,d);
+					werror("load class %s in %s.\n",k,f);
+				}
+				*/
+			//}
+		}
+		return features[name];
+	};/*}}}*/
+
+//! @appears load_system
+//!
+//! Load a MCS(Manageable Code Structure) system. A MCS system use a description file base on Pike grammar, with extra support of IMPORTing some FEATUREs 
+//!
+//! 装载一个MCS(可管理的代码结构)系统，一个MCS系统使用一个基于Pike语法的描述文件，这个描述文件可以IMPORT多个功能模块
+//!
+//! @param path
+//!
+//!	Path of MCS description file.
+//!
+//!	MCS描述文件路径
+//!
+//! @param noaddconst
+//!
+//!	Don't export the classes inside the loaded MCS system.
+//!
+//!	不要将所装载的MCS系统中的class暴露成常数。
+//!
+//! @param extra_header
+//!
+//!	Add extra header into the description file, using internal only.
+//!
+//!	给所装载的描述文件头部添加一些内容，供内部使用。
+	object load_system(string path,int|void noaddconst,string|void extra_header,int|void force_reload)/*{{{*/
+	{
+		werror("Info: loading %s\n",path);
+		if(path[0]=='/')
+			path=path[1..];
+		array a=path/"/";
+		path=Stdio.append_path(cwd,a*"/");
+
+		//if(!IGNORE_DUMP)
+			//mkdir(combine_path(path+".pike-modules"));
+
+		if(!force_reload&&path2object[path])
+			return path2object[path];
+
+		//program p;
+		object d;//=p();
+		if(!IGNORE_DUMP&&Stdio.is_file(/*pmodopath(path)*/path+".o")){
+			foreach(Stdio.read_file(path+".system.features")/"\n",string s){
+				if(s!="")
+					load_feature(s);
+			}
+			//program p=decode_value(Stdio.read_file(pmodopath(path)));
+			//d=p();
+			/*werror("resolv %s\n",pmodname(path));
+			werror("add_module_path: %s\n",combine_path(path+".pike-modules"));
+			master()->add_module_path(combine_path(path+".pike-modules"));
+			d=master()->resolv(pmodname(path));
+			*/
+			//werror("path=%s\n",path);
+			d=decode_value(Stdio.read_file(path+".o"),Decoder())();
+			ASSERT(d);
+		}else{
+
+			string header="#pike __REAL_VERSION__\n#include <global.h>\n"+(extra_header||"")+"\n#line 1\n";
+			string data0=Stdio.read_file(path);
+			string data=header+data0;
+			string res="";
+			multiset imported=(<>);
+			array features=({});
+			int header_lines=sizeof(header/"\n")-1;
+			array a=data0/"\n";
+			int delta_line;
+			if(has_prefix(a[0],"#line ")){
+				int line_begin;
+				sscanf(a[0],"#line %d %*O",line_begin);
+				delta_line=line_begin-2;
+						
+			}
+			int function_mode;
+			foreach(data/"\n";int n;string line){
+				line=String.trim_all_whites(line);
+				if(has_prefix(line,"IMPORT(")&&!has_suffix(line,");")){
+					werror("%O",line);
+					error_notify("ERROR: IMPORT 一个功能必须写作 \"IMPORT([功能名]);\" 并占据整行。\n");
+				}
+				if(has_prefix(line,"IMPORT(")&&has_suffix(line,");")){
+					string feature;
+					sscanf(line,"IMPORT(%s);",feature);
+					imported[feature]=1;
+					mixed e=catch{
+						load_feature(feature);
+						features+=({feature});
+					};
+					if(e){
+						master()->handle_error(e);
+					}
+					res+=sprintf("inherit %s:%s;\n",feature,lower_case(feature));
+				}else if(has_prefix(line,"inherit ")&&has_suffix(line,";")){
+					string feature,as;
+					sscanf(line,"inherit %s:%s;",feature,as)==2|| sscanf(line,"inherit %s;",feature);
+					if(has_prefix(feature,"F_")){
+						mixed e=catch{
+							load_feature(feature);
+							features+=({feature});
+						};
+						if(e){
+							master()->handle_error(e);
+						}
+					}
+					res+=line+"\n";
+				}else if(has_prefix(line,"CLASS ")){
+					if(!has_suffix(line,"{")){
+						werror("%O",line);
+						error_notify("ERROR: 类定义必须写作 \"CLASS 类名称{\" 并占据整行。\n");
+					}else{
+						string classname;
+						sscanf(line,"CLASS %s{",classname);
+						multiset found=(<>);
+						foreach(imported;string feature;int one){
+							program p=load_feature(feature);
+							features+=({feature});
+							if(p[classname]){
+								found[feature]=1;
+							}
+						}
+						res+="class "+classname+"\{\n";
+						foreach(found;string feature;int one){
+							res+=sprintf("inherit %s::%s;\n",lower_case(feature),classname);
+						}
+						res+=sprintf("#line %d\n",n-header_lines+delta_line+2);
+					}
+				}
+				else if(has_prefix(line,"ITEM ")||has_prefix(line,"ITEM* ")||has_prefix(line,"ITEM(")){
+					void usage(string|void extra)/*{{{*/
+					{
+						error_notify(
+#"ERROR: ITEM语法:\n"
+#"	ITEM[*] 类名称(路径[,影子路径][;子类名称1,子类名称2,...]){\\n...}\\n"
+#"	ITEM([父类DAEMON1->]父类名称1,[父类DAEMON2->]父类名称2,...) 类名称(路径[,影子路径][;子类名称1,子类名称2,...]){\\n...\\n"
+#"	ITEM([父类DAEMON1->]父类名称1,[父类DAEMON2->]父类名称2,...) DAEMON->类名称;\\n"
+#"\n"
+							+(extra||"")
+							);
+					};/*}}}*/
+					string modifier;
+					string daemonname;
+					string classname;
+					string t;
+					string subclassnames;
+					string subpath;
+					int ok;
+					if(sscanf(line,"ITEM%s %s(%s){",modifier,classname,t)!=3){
+						if(sscanf(line,"ITEM%s %s;",modifier,classname)==2){
+							if(sscanf(classname,"%s->%s",daemonname,classname)==2&&search(classname,"(")<0){
+								ok=1;
+							}
+						}
+						if(!ok)
+							usage();
+					}else{
+						if(search(t,":")>=0){
+							usage("你可能把分号错写成冒号了。\n");
+						}else{
+							ok=1;
+						}
+					}
+					if(ok){
+						if(t){
+							array a=t/";";
+							subpath=a[0];
+							if(sizeof(a)>=2){
+								subclassnames=a[1];
+							}else{
+								subclassnames=0;
+							}
+						}
+						werror("line=%O\n",line);
+						multiset found=(<>);
+						foreach(imported;string feature;int one){
+							program p=load_feature(feature);
+							features+=({feature});
+							if(p[classname]){
+								found[feature]=1;
+							}
+						}
+						res+=replace("/*int _count_#T#;*/mixed _typeof_#T#=ARGTYPE(#T#);\nint _init_#T#=(",(["#T#":classname,]));
+						if(subclassnames){
+							foreach(subclassnames/",",string subclassname){
+								res+=sprintf("DBASEITEMD->register_dbase_subitem_map(ARGTYPE(%s),({%s.SUBPATH}),ARGTYPE(%s),%s),\n",classname,subclassname,subclassname,subclassname);
+								res+=sprintf("((%s.SHADOW_SUBPATH!=\"\")?(DBASEITEMD->register_dbase_subitem_map(ARGTYPE(%s),({%s.SHADOW_SUBPATH}),ARGTYPE(%s),%s),0):0),\n",subclassname,classname,subclassname,subclassname,subclassname);
+								res+=sprintf(
+										"(DBASEITEMD->type2resolver[ARGTYPE(%s)]=DBASEITEMD->type2resolver[ARGTYPE(%s)]||([])),\n"
+										"(DBASEITEMD->type2resolver[ARGTYPE(%s)][ARGTYPE(%s)]=lambda(object ob,string key){object res=%s(ob,key,1);if(res->data) return res;}),\n"
+									    ,classname,classname,classname,subclassname,subclassname);
+							}
+						}
+						string subclassname=classname;
+						string sub_daemon=daemonname;
+						string sub_argtype;
+						if(sub_daemon==0)
+							sub_argtype=sprintf("ARGTYPE(%s)",subclassname);
+						else
+							sub_argtype=sprintf("%s->_typeof_%s",sub_daemon,subclassname);
+						array a;
+						if(modifier=="*"){
+							/*res+=sprintf("DBASEITEMD->register_dbase_subitem_map(ARGTYPE(%s),({%s.SUBPATH}),ARGTYPE(%s),%s),\n","Root",subclassname,subclassname,subclassname);
+							res+=sprintf("((%s.SHADOW_SUBPATH!=\"\")?(DBASEITEMD->register_dbase_subitem_map(ARGTYPE(%s),({%s.SHADOW_SUBPATH}),ARGTYPE(%s),%s),0):0),\n",subclassname,"Root",subclassname,subclassname,subclassname);
+							res+=sprintf(
+									"(DBASEITEMD->type2resolver[ARGTYPE(%s)]=DBASEITEMD->type2resolver[ARGTYPE(%s)]||([])),\n"
+									"(DBASEITEMD->type2resolver[ARGTYPE(%s)][ARGTYPE(%s)]=lambda(object ob,string key){object res=%s(ob,key,1);if(res->data) return res;}),\n"
+								    ,"Root","Root","Root",subclassname,subclassname);
+								    */
+							a=({"Root"});
+						}else{
+							sscanf(modifier,"(%s)",modifier);
+							a=modifier/",";
+						}
+						foreach(a,string fatherclass){
+							if(fatherclass!=""){
+								string father_daemon,father_classname;
+								if(sscanf(fatherclass,"%s->%s",father_daemon,father_classname)!=2){
+									father_daemon=0;
+									father_classname=fatherclass;
+								}
+								ASSERT(search(father_classname,"->")<0);
+								string father_argtype;
+								if(father_daemon==0)
+									father_argtype=sprintf("ARGTYPE(%s)",father_classname);
+								else
+									father_argtype=sprintf("%s->_typeof_%s",father_daemon,father_classname);
+
+
+								res+=sprintf("DBASEITEMD->register_dbase_subitem_map(%s,({%s.SUBPATH}),%s,%s),\n",father_argtype,subclassname,sub_argtype,subclassname);
+								res+=sprintf("((%s.SHADOW_SUBPATH!=\"\")?(DBASEITEMD->register_dbase_subitem_map(%s,({%s.SHADOW_SUBPATH}),%s,%s),0):0),\n",subclassname,father_argtype,subclassname,sub_argtype,subclassname);
+								res+=sprintf(
+										"(DBASEITEMD->type2resolver[%s]=DBASEITEMD->type2resolver[%s]||([])),\n"
+										"(DBASEITEMD->type2resolver[%s][%s]=lambda(object ob,string key){object res=%s(ob,key,1);if(res->data) return res;}),\n"
+,father_argtype,father_argtype,father_argtype,sub_argtype,subclassname);
+							}
+						}
+						res+="0);\n";
+						if(daemonname==0){
+							res+="class "+classname+"\{\n";
+							foreach(found;string feature;int one){
+								res+=sprintf("inherit %s::%s;\n",lower_case(feature),classname);
+							}
+							array subpath_all=map(subpath/",",lambda(string s){return sprintf("%q",s);});
+							string t;
+							res+=t=replace(
+#"inherit TypeItem;
+void create(object ob,string _key,int|void nocreate,mapping|void init_data){
+	::create(({#SUBPATH_ALL#}),ob,_key,nocreate,init_data);
+	//_count_#T#++;
+}
+void destroy()
+{
+	//_count_#T#--;
+	::destroy();
+}
+constant SUBPATH=#SUBPATH0#;
+constant SHADOW_SUBPATH=#SUBPATH1#;
+mapping `type_resolver(){return map(DBASEITEMD->type2resolver[ARGTYPE(#T#)]||([]),lambda(function f){return Function.curry(f)(this);} );};\n",
+(["#SUBPATH_ALL#":subpath_all*",","#SUBPATH0#":sprintf("%q",(subpath/",")[0]),"#SUBPATH1#":(subpath_all+({"\"\""}))[1],"#T#":classname]));
+						//werror("t=%s\n",t);
+						}
+						res+=sprintf("#line %d\n",n-header_lines+delta_line+2);
+					}
+				}else if(line=="#function"){
+					ASSERT(!function_mode);
+					function_mode=1;
+					string data=sprintf("compile_string(\"mixed eval(mixed ... args){\"\n%q\n",
+						sprintf("\n#line %d \"%s\"\n",n-header_lines+delta_line+2,path)
+						);
+					res+=data;
+				}else if(line=="#endfunction"){
+					ASSERT(function_mode);
+					function_mode=0;
+					string data="\"}\")()->eval\n";
+					res+=data;
+				}else{
+					if(!function_mode)
+						res+=line+"\n";
+					else
+						res+=sprintf("%q",line+"\n");
+				}
+			}
+//werror("res=%s\n",res);
+
+			//string s=cpp(res,path);
+
+			if(!IGNORE_DUMP){
+				//Stdio.write_file(path+".system.pmod",res);
+				//Stdio.write_file(pmodpath(path),res);
+				Stdio.write_file(path+".system.features",features*"\n");
+				mixed e=catch{
+					//master()->add_module_path(combine_path(path+".pike-modules"));
+					//program p=master()->resolv(pmodname(path));
+					program p=compile_string(res,path);
+					Stdio.write_file(/*pmodopath(path)*/path+".o",encode_value(p,Encoder(p)));
+				};
+				if(e){
+					master()->handle_error(e);
+				}
+				//Tools.Standalone.dump()->dumpit(path+".system.pmod",pmodpath(path));
+			}
+			if(!IGNORE_DUMP&&Stdio.is_file(/*pmodopath(path)*/path+".o")){
+				//program p=decode_value(Stdio.read_file(pmodopath(path)));
+				//d=p();
+				//werror("resolv %s\n",pmodname(path));
+				//werror("add_module_path: %s\n",combine_path(path+".pike-modules"));
+				//master()->add_module_path(combine_path(path+".pike-modules"));
+				//d=master()->resolv(pmodname(path));
+				d=decode_value(Stdio.read_file(path+".o"),Decoder())();
+				if(d==0)
+					werror("Error: can't load %s\n",path);
+				ASSERT(d);
+				//werror("%O\n",indices(d));
+				//exit(0);
+			}else{
+				mixed e=catch{
+					program p=compile_string(res,path);
+					d=p();
+					//p=compile_string(s);
+				};
+				if(e){
+					//werror("res=%s\n",res);
+					master()->handle_error(e);
+					werror("Error: can't load %s\n",path);
+					ABORT();
+					//Stdio.write_file("/tmp/load_system.debug.txt",res);
+					//exit(0);
+				}
+			}
+		}
+
+		/*if(has_suffix(path,"/mail.pike")){
+			Stdio.write_file("/tmp/load_system.debug.txt",res);
+			exit(0);
+		}*/
+
+		//werror("update master()->programs %s\n",path);
+		//master()->programs[path]=p;
+
+		//master()->objects[path]=d;
+		path2object[path]=d;
+		if(!noaddconst){
+			//werror("%O",_typeof(d));
+			//werror("%O",indices(d));
+			/*foreach(indices(d),string k){
+				werror("%s %O\n",k,_typeof(d[k]));
+			}*/
+			foreach(indices(d),string k){
+				if(programp(d[k])){
+					werror("INFO: load type %s in %s\n",k,path);
+					add_constant(k,d[k]);
+					//master()->programs[Stdio.append_path(path,k)]=object_program(d);
+				}
+			}
+		}
+		daemons+=({d});
+		return d;
+	};/*}}}*/
+
+
+object GLOBALD;
+object MODULED;
+object CONFD;
+
+class Value(mixed v)/*{{{*/
+{
+	int `==(Value rhd){
+		return objectp(rhd)&&object_program(rhd)==this_program&&equal(rhd->v,v);
+	}
+}/*}}}*/
+
+//! @appears Func
+//!
+//!    Func can be stored in GLOBALD->data, act as dynamic data.
+//!
+//!    Func 可以被存储在GLOBALD->data里，用以返回动态的数据。
+class Func(string daemon,string func,mixed ... args0)
+{
+	string `cmd(){
+		werror("WARNING: Func.cmd deprecated.\n");
+		master()->handle_error(({"WARNING: Func.cmd deprecated.\n",backtrace()}));
+		return daemon;
+	}
+	string `cmd=(string s){
+		werror("WARNING: Func.cmd deprecated.\n");
+		master()->handle_error(({"WARNING: Func.cmd deprecated.\n",backtrace()}));
+		return daemon=s;
+	}
+	int `==(object rhd){
+		return objectp(rhd)&&object_program(rhd)==Func&&rhd->daemon==daemon&&rhd->func==func&&equal(rhd->args0,args0);
+	}
+	mixed _typeof(){
+		if(all_constants()[daemon]){
+			return predef::_typeof(all_constants()[daemon][func]);
+		}else{
+			throw(({"Error: Func in command is deprecated.\n",backtrace()}));
+			//return predef::_typeof(GLOBALD->curr_session->load_command(daemon)[func]);
+		}
+	}
+	mixed `()(mixed ... args){
+		//werror("daemon=%s,func=%s\n",daemon,func);
+		if(all_constants()[daemon]==0){
+			throw(({"Error: Func in command is deprecated.\n",backtrace()}));
+			//werror("WARNING: Func in command is deprecated.\n");
+			//ASSERT(GLOBALD->curr_session);
+			//ASSERT(GLOBALD->curr_session->load_command(daemon));
+			//ASSERT(GLOBALD->curr_session->load_command(daemon)[func]);
+		}
+#if 0
+		if(cache_level()){
+			werror("use_cache ... ");
+			if(cache_query(({daemon,func,})+args0+args)==0){
+				werror("call %s.%s %O\n",daemon,func,args0+args);
+				mixed res;
+				if(all_constants()[daemon]){
+					res=all_constants()[daemon][func](@args0,@args);
+				}else{
+					throw(({"Error: Func in command is deprecated.\n",backtrace()}));
+					//res=GLOBALD->curr_session->load_command(daemon)[func](@args0,@args);
+				}
+				cache_set(({daemon,func,})+args0+args,res);
+				ASSERT_TRUE(cache_query(({daemon,func,})+args0+args)==res,({daemon,func,})+args0+args);
+			}else{
+				werror("hit\n");
+			}
+			return cache_query(({daemon,func,})+args0+args);
+		}
+#endif
+		//werror("no_cache ... ");
+		//werror("call %s.%s %O\n",daemon,func,args0+args);
+		mixed res;
+		if(all_constants()[daemon]){
+			mixed f=all_constants()[daemon][func];
+			if(functionp(f)){
+				werror("not_using_cache ... ");
+				werror("call %s.%s %O\n",daemon,func,args0+args);
+				res=f(@args0,@args);
+			}else if(arrayp(f)){
+				werror("using_cache ... ");
+				[array ref_list,array val_list]=f[1](@args0,@args);
+				ref_list+=map(val_list,Value);
+				mixed r=cache_query(({daemon,func,})+ref_list);
+				if(zero_type(r)){
+					werror("call %s.%s %O\n",daemon,func,args0+args);
+					res=f[0](@args0,@args);
+					cache_set(({daemon,func,})+ref_list,res);
+				}else{
+					werror("hit\n");
+					res=r;
+				}
+			}
+		}else{
+			throw(({"Error: Func in command is deprecated.\n",backtrace()}));
+			//res=GLOBALD->curr_session->load_command(daemon)[func](@args0,@args);
+		}
+		//werror("Func return(2) %O\n",res);
+		return res;
+	}
+
+	string _sprintf(int c){
+		if(c=='O'){
+			return sprintf("Func(%s,%s)",daemon,func);
+		}
+	}
+}
+
+class Encoder{
+	object ob;
+	void create(mixed v)
+	{
+		ob=master()->Encoder(v);
+	}
+	mixed nameof(mixed v)
+	{
+		//werror("nameof:%O\n",v);
+		mixed res=ob->nameof(v);
+		if(arrayp(res)){
+			res[0]=replace(res[0],cwd+"/","$(HOME)");
+		}else if(stringp(res)){
+			res=replace(res,cwd+"/","$(HOME)");
+		}else if(res){
+			werror("WARNING: unexpected nameof(%O)\n",res);
+		}
+		//werror("res=%O\n",res);
+		return res;
+	}
+	mixed encode_object(mixed ... args)
+	{
+		return ob->encode_object(@args);
+	}
+}
+class Decoder{
+	program programof(mixed data)
+	{
+		if(arrayp(data)){
+			data=copy_value(data);
+			data[0]=replace(data[0],"$(HOME)",cwd+"/");
+		}else if(stringp(data)){
+			data=replace(data,"$(HOME)",cwd+"/");
+		}
+		return master()->programof(data);
+	}
+
+	mixed decode_object(mixed ... args)
+	{
+		return master()->decode_object(@args);
+	}
+
+	object objectof(mixed data)
+	{
+		if(arrayp(data)){
+			data=copy_value(data);
+			data[0]=replace(data[0],"$(HOME)",cwd+"/");
+		}else if(stringp(data)){
+			data=replace(data,"$(HOME)",cwd+"/");
+		}
+		return master()->objectof(data);
+	}
+	object __register_new_program(program p)
+	{
+		return master()->__register_new_program(p);
+	}
+	function functionof(mixed data)
+	{
+		if(arrayp(data)){
+			data=copy_value(data);
+			data[0]=replace(data[0],"$(HOME)",cwd+"/");
+		}else if(stringp(data)){
+			data=replace(data,"$(HOME)",cwd+"/");
+		}
+		return master()->functionof(data);
+	}
+}
+
+class Codec{
+	/*mixed nameof(object|function|program x)
+	{
+		mixed res=_nameof(x);
+		werror("nameof return %O\n",res);
+		return res;
+	}*/
+
+	mixed nameof(object|function|program x)
+	{
+		if(objectp(x)){
+			if(object_program(x)==Func){
+				return ({"oFunc",x->daemon,x->func,@x->args0});
+			}else if(x->_save){
+				return ({"oSave",object_program(x),x->_save()});
+			}else{
+				mixed v=master()->nameof(x);
+				if(v)
+					return ({"oOther",v});
+				else
+					return v;
+			}
+		}else if(programp(x)){
+			return master()->nameof(x);
+
+		}else{
+			return master()->nameof(x);
+
+		}
+	}
+
+	object objectof(array data)
+	{
+		//array a=decode_value(data);
+		array a=data;
+		if(a[0]=="oFunc"){
+			return Func(@a[1..]);
+		}else if(a[0]=="oSave"){
+			return a[1](@a[2]);
+		}else{
+			return master()->objectof(a[1]);
+		}
+	}
+	object __register_new_program(program p)
+	{
+		return master()->__register_new_program(p);
+	}
+	function functionof(mixed data)
+	{
+		return master()->functionof(data);
+	}
+	program programof(mixed data)
+	{
+		return master()->programof(data);
+	}
+}
+
+//! @appears this_app
+//!
+//!	Return the MCS object loaded according to the args passed to main.
+//!	返回根据传给main的参数装载的MCS对象。
+object this_app(){return real_object;};
+
+//! @appears safe_write_file
+//!
+//! Write to tmp file and rename to avoid data damege in critical condition.
+//!
+//! 将数据先写进临时文件然后做一个rename，来避免严重错误时发生数据损失。
+void safe_write_file(string path,string data)
+{
+	werror("safe_write_file path=%s\n",path);
+	if(!Stdio.is_dir(path)){
+		Stdio.write_file("var/safe.tmp",data);
+		mv("var/safe.tmp",path);
+		//ASSERT(Stdio.read_file(path)==data);
+	}else{
+		werror("path=%s\n",path);
+		ABORT();
+	}
+}
+
+
+//! @decl Thread.Thread main_thread()
+//! @appears main_thread
+//!
+//!	Return main thread.
+//!
+//!	主线程。
+
+//! @decl object codec
+//! @appears codec 
+//!
+//!	Codec to handle Func.
+//!
+//!	用于将Func序列化。
+//! 
+//! @note
+//!	Always use encode_value(val,codec) to encode_value val in GLOBALD->data.
+//!
+//!	Always use decode_value(data,codec) to decode_value data for GLOBALD->data.
+//!
+//!	为GLOBALD->data里的数据调用encode_value和decode_value时，要使用codec来作为编码解码器。
+
+//! @decl string WORKING_DIR
+//! @appears WORKING_DIR
+//!
+//!	Working dir.
+//!
+//!	工作目录
+
+//! @decl string WORKING_USER
+//! @appears WORKING_USER
+//!
+//!	Working user, the user which will be change uid/gid to after booting as root.
+//!
+//!	工作用户，当系统用root完成启动以后，将切换到工作用户。
+
+//! @decl string WORKING_GID
+//! @appears WORKING_GID
+//!
+//!	gid of WORKING_USER.
+//!
+//!	WORKING_USER 的 gid
+
+//! @decl string WORKING_UID
+//! @appears WORKING_UID
+//!
+//!	uid of WORKING_USER.
+//!
+//!	WORKING_USER 的 uid
+
+//! @decl object GLOBALD
+//! @appears predef::GLOBALD
+//!
+//!	The main purpose of GLOBALD is to store all the data in a tree, and make the data-tree persistent.
+//!
+//!	GLOBALD存在的主要目的是将所有数据组织在一个树形结构里，并提供数据持久性支持。
+
+//! @decl object MODULED
+//! @belongs predef::
+//! 
+//!	MODULED is the daemon to manage MCS FEATUREs.
+//!
+//!	MODULED 是用来管理MCS中的功能模块的daemon.
+//!
+//! @seealso
+//!
+//!	load_system load_feature
+
+array daemons=({});
+
+void create()
+{
+	Locale.register_project("pikecross",Stdio.append_path(getcwd(),"pikecross_%L.xml"));
+	add_constant("main_thread",Thread.this_thread());
+	/*add_constant("quit",lambda(){
+			destruct(this);
+			});*/
+	add_constant("werror",werror);
+	add_constant("Func",Func);
+	add_constant("codec",Codec());
+	add_constant("safe_write_file",safe_write_file);
+	add_constant("WORKING_DIR",cwd);
+
+	foreach(get_dir("efun.d"),string f){
+		werror("f=%s\n",f);
+		if(has_suffix(f,".pike")){
+			string name=upper_case((f/".")[..<1]*"."+"d");
+			object d;
+			if(!IGNORE_DUMP){
+				string ff=Stdio.append_path("efun.d",f);
+				if(!Stdio.is_file(ff+".o")){
+					mixed e=catch{
+						program p=(program)("efun.d/"+f);
+						Stdio.write_file(ff+".o",encode_value(p,Encoder(p)));
+					};
+					if(e){
+						master()->handle_error(e);
+					}
+					//Tools.Standalone.dump()->dumpit(ff,ff);
+				}
+				if(Stdio.is_file(ff+".o")){
+					werror("Info: decode %s.o\n",ff);
+					program p=decode_value(Stdio.read_file(ff+".o"),Decoder());
+					d=p();
+				}
+			}
+			if(d==0){
+				d=(object)("efun.d/"+f);
+			}
+			daemons+=({d});
+			add_constant(name,d);
+			add_constant(name+"_PROGRAM",object_program(d));
+			werror("Info: add_constant %s\n",name);
+			foreach(indices(d),string s){
+				if(s!="main"){
+					werror("Info: load efun %s in %s.\n",s,f);
+					add_constant(s,d[s]);
+				}
+			}
+			werror("Info: add_constant %s done\n",name);
+		}else if(has_suffix(f,".d")){
+			string path=Stdio.append_path("efun.d",f,"pike-modules");
+			if(Stdio.is_dir(path)){
+				werror("Info: add_module_path: %s\n",path);
+				master()->add_module_path(path);
+			}
+		}
+	}
+	werror("efun.d done\n");
+
+	add_constant("cache_begin",cache_begin);
+	add_constant("cache_end",cache_end);
+	add_constant("cache_set",cache_set);
+	add_constant("cache_query",cache_query);
+	add_constant("cache_level",cache_level);
+
+}
+void setup(string real_object_file,string working_user,int autosave)
+{
+	werror("real_object_file=%O\n",real_object_file);
+	werror("cwd=%O\n",getcwd());
+	add_constant("WORKING_USER",working_user);
+#ifndef __NT__
+	array a=getpwnam(working_user);
+	if(a){
+		working_uid=a[2];
+		working_gid=a[3];
+	}
+#endif
+	add_constant("WORKING_UID",working_uid);
+	add_constant("WORKING_GID",working_gid);
+
+	add_constant("this_app",this_app);
+
+	GLOBALD=((object)"globald.pike");
+	MODULED=((object)"moduled.pike");
+	CONFD=((object)"confd.pike");
+	if(autosave)
+		GLOBALD->auto_save();
+	daemons+=({GLOBALD,MODULED,CONFD});
+
+	add_constant("GLOBALD",GLOBALD);
+	add_constant("MODULED",MODULED);
+	add_constant("CONFD",CONFD);
+	add_constant("LOADER",this);
+	error_notify=MODULED->error_notify;
+
+	master()->add_include_path(Stdio.append_path(cwd,"include"));
+	master()->add_program_path(Stdio.append_path(cwd,"inherit"));
+	werror("Info: add include path %O\n",Stdio.append_path(cwd,"include"));
+
+	if(Stdio.is_file("confd.rc"))
+		load_system("confd.rc");
+
+
+	add_constant("load_system",load_system);
+
+	/*
+	load_feature("F_DBASE");
+	load_feature("F_HANDLE_PROTOTYPE");
+	object dbaseitemd=load_system("./dbaseitem.pike",1);
+	add_constant("ROOT",dbaseitemd->root);
+	add_constant("TypeItem",dbaseitemd->TypeItem);
+	*/
+
+	//Stdio.recursive_rm("feature.work");
+
+
+	//mkdir("feature.work");
+
+	array type_dir_list=({});
+
+	foreach(get_dir("feature"),string file){
+		if(Stdio.is_file("feature/"+file)){
+			if(has_suffix(file,".pike")){
+				string dpath=(file/".")[..<1]*"."+".d";
+				werror("Info: pre-process feature %s.\n",file);
+				string data=Stdio.read_file("feature/"+file);
+				string res="#include <module.h>\n"
+#"private void setup0(int flag)
+{
+	flag && auto_check_extern(__FILE__);
+}
+"
+#"#line 1\n";
+				int daemon_mode;
+				int function_mode;
+				string daemon_res="";
+				foreach(data/"\n";int n;string line){
+					line=String.trim_all_whites(line);
+					if(!daemon_mode&&has_prefix(line,"MIXIN ")&&!has_suffix(line,"{")){
+						werror("%O",line);
+						error_notify("ERROR: MIXIN 定义必须写作 \"MIXIN [类名称]{\" 并占据整行。\n");
+					}
+					if(!daemon_mode&&has_prefix(line,"MIXIN ")&&has_suffix(line,"{")){
+						res+=sprintf("%s\n#include <module.h>\n"
+#"private void setup0(int flag)
+{
+	flag && auto_check_extern(__FILE__);
+}
+"
+#"#line %d\n",replace(line,"MIXIN","class"),n+2);
+					}else if(line=="DAEMON:"){
+						daemon_mode=1;
+						daemon_res=sprintf("#line %d \"%s\"\n",n+2,Stdio.append_path(getcwd(),"feature",file));
+					}else if(line=="#function"){
+						ASSERT(!function_mode);
+						function_mode=1;
+						string data=sprintf("compile_string(\"mixed eval(mixed ... args){\"\n%q\n",
+							sprintf("\n#line %d \"%s\"\n",n+2,Stdio.append_path(getcwd(),"feature",file)));
+
+						if(!daemon_mode){
+							res+=data;
+						}else{
+							daemon_res+=data;
+						}
+					}else if(line=="#endfunction"){
+						ASSERT(function_mode);
+						function_mode=0;
+						string data="\"}\")()->eval\n";
+						if(!daemon_mode){
+							res+=data;
+						}else{
+							daemon_res+=data;
+						}
+					}else if(!daemon_mode){
+						if(!function_mode)
+							res+=line+"\n";
+						else
+							res+=sprintf("%q",line+"\n");
+					}else{
+						if(!function_mode)
+							daemon_res+=line+"\n";
+						else
+							daemon_res+=sprintf("%q",line+"\n");
+					}
+				}
+				feature_data[file]=res;
+				if(daemon_mode){
+					string path=Stdio.append_path(getcwd(),"feature.tmp",dpath);
+					mkdir(path);
+					chown(path,working_uid,working_gid);
+					Stdio.write_file(Stdio.append_path(path,file),daemon_res);
+					chown(Stdio.append_path(path,file),working_uid,working_gid);
+				}
+				if(Stdio.is_dir("feature/"+dpath)){
+					master()->add_include_path(Stdio.append_path(cwd,"feature",dpath));
+					werror("Info: add include path %O\n",Stdio.append_path(cwd,"feature",dpath));
+					type_dir_list+=({"feature/"+dpath});
+				}
+				//Stdio.write_file("feature.work/"+file,res);
+			}
+		}
+	}
+/*
+
+	foreach(type_dir_list,string path){
+		foreach(get_dir(path),string f){
+			if(has_suffix(f,".pike")){
+				string name=upper_case((f/".")[..<1]*"."+"d");
+				object d=load_system(path+"/"+f);
+				//object d=(object)(path+"/"+f);
+				add_constant(name,d);
+				foreach(indices(d),string k){
+					werror("load type %s in %s\n",k,f);
+					if(programp(d[k])){
+						add_constant(k,d[k]);
+					}
+				}
+			}
+		}
+	}
+	*/
+
+
+
+
+
+
+
+
+/*
+	foreach(get_dir("system"),string f){
+		if(has_suffix(f,".pike")){
+			load_system(Stdio.append_path("/system",f));
+		}
+	}
+	*/
+	//add_constant("this_session",this_session);
+	//add_constant("set_this_session",set_this_session);
+	//master()->add_module_path("./pike-modules");
+
+	real_object=load_system(real_object_file);
+	//add_constant("APPSERVER",real_object);
+	//add_constant("APPSERVER_PROGRAM",object_program(real_object));
+
+	if(real_object->setup)
+		real_object->setup();
+#ifndef __NT__
+	System.setgid(working_gid);
+	System.setuid(working_uid);
+#endif
+	if(real_object->setup2)
+		real_object->setup2();
+}
+
+//! @decl int main(int argc,array argv)
+//! @appears main
+//! Usage: [sudo] pike run <app.pike> <working_user> [args for app.pike] ... 
+//! 
+//! app.pike is a description file of a MCS system, will be loaded using load_system.
+//! After app.pike is loaded, following code will be excuted(app is the loaded app.pike):
+//! 
+//! @code
+//! 
+//!	if(app->setup){
+//!		app->setup();
+//!	}
+//!	System.setgid(WORKING_GID);
+//!	System.setuid(WORKING_UID);
+//!	if(app->setup2){
+//!		app->setup2();
+//!	}
+//! 
+//! @endcode
+//!
+//! Then,app.pike->main will be called, with the "args for app.pike".
+int main(int argc,array argv)
+{
+	werror("Info: run.pike main enter\n");
+	werror("argv=%O\n",argv);
+
+	mapping args=Arg.parse((argv/({"--"}))[0]);
+	argv=args[Arg.REST]+((argv/({"--"}))+({({})}))[1];
+	string user=args["user"];
+	int autosave=args["s"]||args["auto-save"];
+
+	if(args["h"]||args["help"]){
+		werror("usage: run.pike [options] -- <realobject.pike> [realobject options] [args ...]\n"
+#"-h,	--help				Show this help.\n"
+#"	--user=USER			Set setuid to USER.\n"
+#"-s,	--auto-save			GLOBALD autosave.\n"
+				);
+		return 0;
+	}
+
+
+	setup(argv[0],user,autosave);
+	real_object->main(sizeof(argv),argv);
+	werror("Info: run.pike main leave\n");
+	destruct(this);
+}
+
+void destroy()
+{
+	werror("Info: run.pike destroy\n");
+	string old_cwd=getcwd();
+	cd(cwd);
+	foreach(reverse(daemons),object ob){
+		destruct(ob);
+	}
+	cd(old_cwd);
+}

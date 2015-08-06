@@ -1,0 +1,132 @@
+#! /bin/env pike
+class Array(mixed ... a)
+{
+	mixed `[](int pos){ return a[pos];}
+	mixed `[]=(int pos,mixed val){ return a[pos]=val;}
+	int _sizeof()/*{{{*/
+	{
+		return sizeof(a);
+	}/*}}}*/
+	int `==(object rhd)/*{{{*/
+	{
+		if(!objectp(rhd))
+			return 0;
+		return equal(a,rhd->a);
+	}/*}}}*/
+	int `<(object rhd)/*{{{*/
+	{
+		if(sizeof(a)==sizeof(rhd->a)){
+			if(sizeof(a)==0)
+				return 0;
+			if(a[0]<rhd->a[0])
+				return 1;
+			else if(a[0]==rhd->a[0])
+				return .Array(@a[1..])<.Array(@rhd->a[1..]);
+			else if(a[0]>rhd->a[0])
+				return 0;
+		}
+	}/*}}}*/
+	object `-(object rhd)/*{{{*/
+	{
+		object res=.Array(@allocate(sizeof(a)));
+		for(int i=0;i<sizeof(a)&&i<sizeof(rhd->a);i++){
+			res->a[i]=a[i]-rhd->a[i];
+		}
+		return res;
+	}/*}}}*/
+	object `+(object ... args)/*{{{*/
+	{
+		object res=.Array(@allocate(sizeof(a)));
+		for(int i=0;i<sizeof(a);i++)
+			res->a[i]=a[i];
+		foreach(args,object rhd){
+			for(int i=0;i<sizeof(res->a)&&i<sizeof(rhd->a);i++){
+				res->a[i]=res->a[i]+rhd->a[i];
+			}
+		}
+		return res;
+	}/*}}}*/
+	int __hash()/*{{{*/
+	{
+		return hash_value(predef::`+(0.0,@map(a,hash_value)));
+	}/*}}}*/
+	string _sprintf(int t)/*{{{*/
+	{
+		if(t=='O'){
+			array aa=({});
+			foreach(a,mixed v){
+				aa+=({sprintf("%O",v)});
+			}
+			return "Array("+aa*","+")";
+		}
+	}/*}}}*/
+}
+class Pair{
+	inherit .Array;
+	void create(mixed first,mixed second)/*{{{*/
+	{
+		::create(first,second);
+	}/*}}}*/
+	string _sprintf(int t)/*{{{*/
+	{
+		if(t=='O'){
+			array aa=({});
+			foreach(a,mixed v){
+				aa+=({sprintf("%O",v)});
+			}
+			return "Pair("+aa*","+")";
+		}
+	}/*}}}*/
+}
+class Set{
+	inherit .Array;
+	void create(mixed ... args)/*{{{*/
+	{
+		::create(@sort(args));
+	}/*}}}*/
+	string _sprintf(int t)/*{{{*/
+	{
+		if(t=='O'){
+			array aa=({});
+			foreach(a,mixed v){
+				aa+=({sprintf("%O",v)});
+			}
+			return "Set("+aa*","+")";
+		}
+	}/*}}}*/
+}
+int sn;
+int autoid()
+{
+	return ++sn;
+}
+class Item{
+	int _byvalue_item_id=.autoid();
+	int `<(object rhd)/*{{{*/
+	{
+		if(Program.inherits(rhd,Item)){
+			return _byvalue_item_id<rhd->_byvalue_item_id;
+		}
+	}/*}}}*/
+	int __hash()/*{{{*/
+	{
+		return hash_value(_byvalue_item_id);
+	}/*}}}*/
+	string _sprintf(int t)/*{{{*/
+	{
+		if(t=='O'){
+			return "ByValue.Item("+_byvalue_item_id+")";
+		}
+	}/*}}}*/
+}
+#include <args.h>
+int main(int argc,array argv)
+{
+	mapping args=Arg.parse(argv)+([0:argv[0]]);
+	array rest=args[Arg.REST];
+	if(Usage.usage(args,"",0)){
+		return 0;
+	}
+	HANDLE_ARGUMENTS();
+}
+

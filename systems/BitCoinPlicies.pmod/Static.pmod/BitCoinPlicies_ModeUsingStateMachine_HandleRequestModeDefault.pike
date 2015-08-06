@@ -1,0 +1,1 @@
+inherit BitCoinPlicies.Class.BitCoinPlicies_ModeUsingStateMachine_HandleRequestModeDefault._class.Static;

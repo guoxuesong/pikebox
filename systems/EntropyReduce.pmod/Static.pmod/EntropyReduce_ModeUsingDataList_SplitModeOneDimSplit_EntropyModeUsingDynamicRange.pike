@@ -1,0 +1,1 @@
+inherit EntropyReduce.Class.EntropyReduce_ModeUsingDataList_SplitModeOneDimSplit_EntropyModeUsingDynamicRange._class.Static;

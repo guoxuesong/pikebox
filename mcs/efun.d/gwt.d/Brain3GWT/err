@@ -1,0 +1,13 @@
+Buildfile: build.xml
+
+libs:
+
+javac:
+    [javac] Compiling 1 source file to C:\gwt-2.2.0\Brain3GWT\war\WEB-INF\classes
+    [javac] 注意：C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java 使用或覆盖了已过时的 API。
+    [javac] 注意：要了解详细信息，请使用 -Xlint:deprecation 重新编译。
+    [javac] 注意：C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java 使用了未经检查或不安全的操作。
+    [javac] 注意：要了解详细信息，请使用 -Xlint:unchecked 重新编译。
+
+devmode:
+终止批处理操作吗(Y/N)? 终止批处理操作吗(Y/N)? 

@@ -1,0 +1,71 @@
+#define ESC""
+
+constant CSI=ESC "[";
+ 
+                /*  Foreground Colors  */
+ 
+constant BLK=ESC "[30m";         /* Black    */
+constant RED=ESC "[31m";         /* Red      */
+constant GRN=ESC "[32m";         /* Green    */
+constant YEL=ESC "[33m";         /* Yellow   */
+constant BLU=ESC "[34m";         /* Blue     */
+constant MAG=ESC "[35m";         /* Magenta  */
+constant CYN=ESC "[36m";         /* Cyan     */
+constant WHT=ESC "[37m";         /* White    */
+ 
+                /*   Hi Intensity Foreground Colors   */
+ 
+constant HIR=ESC "[1;31m";       /* Red      */
+constant HIG=ESC "[1;32m";       /* Green    */
+constant HIY=ESC "[1;33m";       /* Yellow   */
+constant HIB=ESC "[1;34m";       /* Blue     */
+constant HIM=ESC "[1;35m";       /* Magenta  */
+constant HIC=ESC "[1;36m";       /* Cyan     */
+constant HIW=ESC "[1;37m";       /* White    */
+
+                /* High Intensity Background Colors  */
+
+constant HBRED=ESC "[41;1m";      /* Red      */
+constant HBGRN=ESC "[42;1m";      /* Green    */
+constant HBYEL=ESC "[43;1m";      /* Yellow   */
+constant HBBLU=ESC "[44;1m";      /* Blue     */
+constant HBMAG=ESC "[45;1m";      /* Magenta  */
+constant HBCYN=ESC "[46;1m";      /* Cyan     */
+constant HBWHT=ESC "[47;1m";      /* White    */
+ 
+                /*  Background Colors  */
+ 
+constant BBLK=ESC "[40m";         /* Black    */
+constant BRED=ESC "[41m";         /* Red      */
+constant BGRN=ESC "[42m";         /* Green    */
+constant BYEL=ESC "[43m";         /* Yellow   */
+constant BBLU=ESC "[44m";         /* Blue     */
+constant BMAG=ESC "[45m";         /* Magenta  */
+constant BCYN=ESC "[46m";         /* Cyan     */
+// constant BWHT=ESC "[47m";         /* White    */
+
+constant NOR=ESC "[2;37;0m";     /* Puts everything back to normal */
+ 
+/*  Additional ansi Esc codes added to ansi.h by Gothic  april 23,1993 */
+/* Note, these are Esc codes for VT100 terminals, and emmulators */
+/*       and they may not all work within the mud               */
+ 
+constant BOLD=ESC "[1m";         /* Turn on bold mode */
+constant CLR=ESC "[2J";          /* Clear the screen  */
+constant HOME=ESC "[H";          /* Send cursor to home position */
+//constant REF=CLR HOME;            /* Clear screen and home cursor */
+constant BIGTOP=ESC "#3";        /* Dbl height characters, top half */
+constant BIGBOT=ESC "#4";        /* Dbl height characters, bottem half */
+constant SAVEC=ESC "[s";          /* Save cursor position */
+constant REST=ESC "[u";           /* Restore cursor to saved position */
+//constant REVINDEX=ESC "M";       /* Scroll screen in opposite direction */
+constant SINGW=ESC "#5";         /* Normal, single-width characters */
+constant DBL=ESC "#6";           /* Creates double-width characters */
+constant FRTOP=ESC "[2;25r";     /* Freeze top line */
+constant FRBOT=ESC "[1;24r";     /* Freeze bottom line */
+constant UNFR=ESC "[r";          /* Unfreeze top and bottom lines */
+constant BLINK=ESC "[5m";        /* Initialize blink mode */
+constant U=ESC "[4m";            /* Initialize underscore mode */
+constant REV=ESC "[7m";          /* Turns reverse video mode on */
+constant HIREV=ESC "[1,7m";      /* Hi intensity reverse video  */
+ 

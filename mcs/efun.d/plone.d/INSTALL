@@ -1,0 +1,10 @@
+quintagroup.plonecaptchas
+-------------------------
+* Go to portal_setup - Import
+* in Select Profile or Snapshot drop down menu select Plone Captchas Register Forms for Plone 4
+* Move to the bottom of the page and press Import all steps
+* Captcha will now be applied to the registration form. 
+
+Dynamic Captcha
+---------------
+* Use system python to build Imaging-1.1.7, use plone python to install.

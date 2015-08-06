@@ -1,0 +1,1 @@
+inherit SparseEntropyReduce.Class.SparseEntropyReduce_ModeDefault._class.Static;

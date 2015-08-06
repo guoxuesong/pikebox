@@ -1,0 +1,175 @@
+<html><head><title>Pike Reference Manual - predef::</title>
+<link rel='stylesheet' href='../style.css' /></head>
+<body topmargin='0' leftmargin='0' marginheight='0' marginwidth='0'
+      bgcolor='#ffffff' text='#000000' link='#000099' alink='#002040'
+      vlink='#000099'>
+
+<table width="100%">
+  <tr>
+    <td colspan='3'></td>
+    <td colspan='2' align='right'>Extracted at 2012-04-11.</td>
+  </tr>
+  <tr>
+    <td width="0%"><img src="..//images/unit.gif" alt="" width="10" height="1"></td>
+    <td width="1%">
+      <a href="http://pike.ida.liu.se/"><img src="..//images/pike_logo.gif"
+      border="0" alt="pike.ida.liu.se" width="181" height="41" hspace="5"></a></td>
+    <td width="0%"><img src="..//images/unit.gif" alt="" width="10" height="1"></td>
+    <td width="99%">
+      <table align="center" border="0" width="100%" cellspacing="0" cellpadding="0" valign="middle">
+        <tr>
+          <td width="1%" align="right"><img src="..//images/pike_line_left.gif" alt="" border="0" width="5" height="11"></td>
+          <td background="..//images/pike_line_middle.gif" width="98%"><img src="..//images/unit.gif" alt="" border="0" width="11" height="11"></td>
+          <td width="1%" align="left"><img src="..//images/pike_line_right.gif" alt="" border="0" width="5" height="11"></td>
+        </tr>
+      </table>
+    </td>
+    <td width="0%"><img src="..//images/unit.gif" alt="" width="10" height="1"></td>
+  </tr>
+  <tr>
+    <td colspan="5"><img src="..//images/unit.gif" alt="" width="1" height="10"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width='180' valign='top' bgcolor='#f0f0f0'><a href='../index.html'><b>[Top]</b></a><br />
+<table border='0' cellpadding='1' cellspacing='0' class='sidebar'><tr><td nowrap='nowrap'><br /><b>Classes</b></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/Func.html'><b>Func</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/dbase.html'><b>dbase</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/globald.html'><b>globald</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/run.html'><b>run</b></a></td></tr>
+<tr><td nowrap='nowrap'><br /><b>Methods</b></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/load_feature.html'>load_feature()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/load_system.html'>load_system()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/main.html'>main()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/main_thread.html'>main_thread()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/safe_write_file.html'>safe_write_file()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../ex/predef_3A_3A/this_app.html'>this_app()</a></td></tr>
+</table></td>
+    <td width='520' valign='top'>
+
+    <table border="0" width="520" bgcolor="#e0e0e0"
+           cellpadding="0" cellspacing="4" class='sidebar'>
+      <tr>
+        <td valign="middle">
+	  <a href="../index.html"><img src="../images/prev.gif" hspace="3"
+	         border="0" alt="previous" ></a>
+          <br />
+	</td>
+	<td align="right" valign="middle">
+	  <a href="../ex/predef_3A_3A/Func.html">Func<img src="../images/next.gif" hspace="3"
+	          border="0" alt="next" ></a>
+	  <br />
+	</td>
+      </tr>
+    </table>
+
+    <h1>Namespace predef::</h1>
+    
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>codec</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>object</font> <b><font color='#F000F0'>codec</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>Codec to handle Func.</p>
+<p>	用于将Func序列化。</p>
+</font></dd>
+<dt><font face='Helvetica'>Note</font><dt>
+<dd><font face='Helvetica'><p>Always use encode_value(val,codec) to encode_value val in GLOBALD-&gt;data.</p>
+<p>	Always use decode_value(data,codec) to decode_value data for GLOBALD-&gt;data.</p>
+<p>	为GLOBALD-&gt;data里的数据调用encode_value和decode_value时，要使用codec来作为编码解码器。</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>WORKING_DIR</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>string</font> <b><font color='#F000F0'>WORKING_DIR</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>Working dir.</p>
+<p>	工作目录</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>WORKING_USER</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>string</font> <b><font color='#F000F0'>WORKING_USER</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>Working user, the user which will be change uid/gid to after booting as root.</p>
+<p>	工作用户，当系统用root完成启动以后，将切换到工作用户。</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>WORKING_GID</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>string</font> <b><font color='#F000F0'>WORKING_GID</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>gid of WORKING_USER.</p>
+<p>	WORKING_USER 的 gid</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>WORKING_UID</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>string</font> <b><font color='#F000F0'>WORKING_UID</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>uid of WORKING_USER.</p>
+<p>	WORKING_USER 的 uid</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>GLOBALD</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>object</font> <b><font color='#F000F0'>GLOBALD</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>The main purpose of GLOBALD is to store all the data in a tree, and make the data-tree persistent.</p>
+<p>	GLOBALD存在的主要目的是将所有数据组织在一个树形结构里，并提供数据持久性支持。</p>
+</font></dd></dl>
+
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Variable</font>
+<font size='+1'><b>MODULED</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>object</font> <b><font color='#F000F0'>MODULED</font></b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>MODULED is the daemon to manage MCS FEATUREs.</p>
+<p>	MODULED 是用来管理MCS中的功能模块的daemon.</p>
+</font></dd>
+<dt><font face='Helvetica'>See also</font><dt>
+<dd><font face='Helvetica'><p>load_system load_feature</p>
+</font></dd></dl>
+
+
+    <hr size='1' noshade='1' />
+    </td>
+  </tr>
+</table>
+</body>
+</html>

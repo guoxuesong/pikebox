@@ -1,0 +1,40 @@
+#define DYNPROG
+#include <class.h>
+#define CLASS_HOST "$(MODULE)"
+class DynClass{
+#include <class_imp.h>
+}
+
+class UniqIDStatic{
+	class Static{
+		int sn;
+	};
+}
+
+class UniqID{
+	int id=++(STATIC(UniqIDStatic)->sn);
+}
+
+class $(MODULE)Mode{
+	class Interface{
+	}
+	class Default{
+	}
+}
+
+class $(MODULE){
+	inherit $(MODULE)Mode.Interface;
+}
+
+program default_program=CLASS($(MODULE),$(MODULE)Mode.Default);
+
+#include <args.h>
+int main(int argc,array argv)
+{
+	mapping args=Arg.parse(argv)+([0:argv[0]]);
+	array rest=args[Arg.REST];
+	if(Usage.usage(args,"",0)){
+		return 0;
+	}
+	HANDLE_ARGUMENTS();
+}

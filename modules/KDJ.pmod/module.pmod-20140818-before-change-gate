@@ -1,0 +1,661 @@
+#! /home/work/bin/pike
+#define BEGIN "open"
+#define END "close"
+#define MAX "maxval"
+#define MIN "minval"
+
+#define USING_BINARY_SEARCH
+
+private class KDJTool{/*{{{*/
+	protected float rsv(int n,array a,int i)
+	{
+		return (a[i][END]-min(@map(a[i-n+1..i],`[],MIN)))/(max(@map(a[i-n+1..i],`[],MAX))-min(@map(a[i-n+1..i],`[],MIN)));
+	}
+	protected float kdj_k(int n,array a,int i,float lastk)
+	{
+		catch{
+			return lastk*2/3+rsv(n,a,i)*1/3;
+		};
+		return 0.5;
+	}
+	protected float kdj_d(int n,array a,int i,float lastk,float lastd)
+	{
+		catch{
+			return lastd*2/3+kdj_k(n,a,i,lastk)*1/3;
+		};
+		return 0.5;
+	}
+
+	protected float kdj_j(int n,array a,int i,float lastk,float lastd)
+	{
+		return kdj_k(n,a,i,lastk)*3-kdj_d(n,a,i,lastk,lastd)*2;
+	}
+}/*}}}*/
+
+int kdj_count_goldcross(array kdj,int n,float limit)
+{
+        int res;
+        for(int i=max(0,sizeof(kdj)-n-1);i<sizeof(kdj)-1;i++){
+                if(kdj[i][0]<limit&&kdj[i][0]<kdj[i][1]&&kdj[i+1][0]>kdj[i+1][1]){
+                        res++;
+                }
+        }
+        return res;
+}
+int kdj_count_deadcross(array kdj,int n,float limit)
+{
+        int res;
+        for(int i=max(0,sizeof(kdj)-n-1);i<sizeof(kdj)-1;i++){
+                if(kdj[i][0]>limit&&kdj[i][0]>kdj[i][1]&&kdj[i+1][0]<kdj[i+1][1]){
+                        res++;
+                }
+        }
+        return res;
+}
+
+class MA(int n){
+	array a=({});
+	int feed(object ymd,float open,float close,float maxval,float minval)
+	{
+		a+=({close});
+		a=a[<n-1..];
+		return `+(@a)/sizeof(a);
+	}
+}
+
+class CC{
+	float last_close;
+
+	int dir;
+	int total_count;
+	int count;
+	int fail_count;
+	
+	array feed(object ymd,float open,float close,float maxval,float minval)
+	{
+		total_count++;
+		if(close>=last_close&&dir==1||close<=last_close&&dir==-1){
+			count++;
+		}else{
+			fail_count++;
+		}
+		if(dir==0||fail_count>=2){
+			dir=0;
+			if(close>last_close)
+				dir=1;
+			else if(close<last_close)
+				dir=-1;
+
+			count=0;
+			fail_count=0;
+		}
+		last_close=close;
+		return ({total_count,count*dir});
+	}
+}
+
+class KDJ{
+	inherit KDJTool;
+	array a=({});
+	array kdjlist=({({0.5,0.5,0.5})})*11;
+	array ymdlist=({0})*11;
+	array feed(object ymd,float open,float close,float maxval,float minval)
+	{
+		mapping info=(["open":open,"close":close,"maxval":maxval,"minval":minval]);
+		a+=({info});
+		float kk=kdj_k(9,a,sizeof(a)-1,kdjlist[-1][0]);
+		float dd=kdj_d(9,a,sizeof(a)-1,kdjlist[-1][0],kdjlist[-1][1]);
+		float jj=kdj_j(9,a,sizeof(a)-1,kdjlist[-1][0],kdjlist[-1][1]);
+		kdjlist+=({({kk,dd,jj})});
+		//append_kdj(kk,dd,jj);
+		//Stdio.append_file(file,sprintf("%s,%f,%f,%f,%f,%f,%f,%f\n",ymd->format_ymd(),info->open,info->close,info->maxval,info->minval,kk,dd,jj));
+		ymdlist+=({ymd});
+		a=a[<10..];
+		kdjlist=kdjlist[<10..];
+		return query();
+	};
+	array query(int|void n)
+	{
+		return ({ymdlist[-(1+n)]})+kdjlist[-(1+n)];
+	}
+	array rollback()
+	{
+		a=a[..<1];
+		kdjlist=kdjlist[..<1];
+		ymdlist=ymdlist[..<1];
+		return query();
+	}
+};
+
+class ANY{
+	int `[](mixed ig){return 1;}
+}
+
+#define WEEK_PHASE 1
+#define WEEK_AVG_SIZE 1
+#define CALENDAR_LINE_COUNT (2+WEEK_PHASE)
+
+#define HOLD_MONTH -1
+#define HOLD_WEEK (-1-WEEK_PHASE)
+#define HOLD_DAY (HOLD_WEEK-1)
+#define HOLD_HOUR (HOLD_DAY-1)
+#define HOLD_HALF_HOUR (HOLD_HOUR-1)
+
+mapping|object last_strategies=ANY();
+mapping|object gate=ANY();
+mapping strategies;
+mapping strategies_why=([]);
+object strategy_db;//=Gdbm.gdbm("strategies.db","rwc");
+
+void handle_request(Protocols.HTTP.Server.Request r)
+{
+	mapping m=r->variables;
+	int t=(int)m->t;
+	string data;
+	if(t==0){
+		data=sprintf("%d",(strategies||([]))[m->id]);
+	}else{
+		t=t/(60*15)*(60*15);
+		if(strategy_db[sprintf("%d",t)]){
+			[int val,string why]=decode_value(strategy_db[sprintf("%d",t)]);
+			data=sprintf("%d:%s",val[m->id],why[m->id]||"unknown");
+		}else{
+			data="-1:unknown";
+		}
+	}
+	werror("http req: id=%s,t=%d;data=%s\n",m->id,t,data);
+	r->response_and_finish(([
+				"data":data,
+				"error":202,
+				"length":sizeof(data),
+				]));
+}
+
+#include <args.h>
+int main(int argc,array argv)
+{
+	if(Usage.usage(argv,"",0)){
+		werror(
+#" -h,	--help		Show this help.
+ --inst=INSTANCE
+ --path=PATH
+ --start-interval-level=N
+ [--http-ip=IP]
+ [--http-port=PORT]
+ [--follow-stdin]
+ [--out=FILE]
+");
+		return 0;
+
+	}
+	mapping args=Arg.parse(argv);
+	array rest=args[Arg.REST];
+
+
+	REQUIRED ARGUMENT_STRING("inst",inst_flag,inst);
+	REQUIRED ARGUMENT_STRING("path",path_flag,savepath);
+	ARGUMENT_INTEGER("start-interval-level",start_interval_level_flag,start_interval_level);
+	ARGUMENT_FLAG("follow-stdin",follow_stdin_flag);
+	ARGUMENT_STRING("http-ip",http_ip_flag,http_ip);
+	ARGUMENT_INTEGER("http-port",http_port_flag,http_port);
+	ARGUMENT_STRING("out",out_flag,outfilestr);
+
+	http_ip=http_ip||"0.0.0.0";
+	http_port=http_port||80;
+
+	strategy_db=Gdbm.gdbm(savepath+"/strategies.db","rwc");
+
+	array kdjs=({});
+	array ccs=({});
+	array mas=({});
+	for(int i=0;i<sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT;i++){
+		kdjs+=({KDJ()});
+		ccs+=({CC()});
+		mas+=({MA(7)});
+	}
+	array holds=allocate(sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT,0);
+	array ccvals=allocate(sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT,0);
+	array ttvals=allocate(sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT,0);
+	array mavals=allocate(sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT,0);
+
+	array last_holds=copy_value(holds);
+
+	array week_alters=({});
+
+	int extra_lines_startpos=0;
+	array extra_lines=({0})*CALENDAR_LINE_COUNT;
+
+	void update_extra_lines(object lines,int|void skiplast)/*{{{*/
+	{
+		extra_lines[0]=lines->a[-1]->day_line(0,extra_lines[0],extra_lines_startpos,skiplast);
+		week_alters=({});
+		for(int i=0;i<WEEK_PHASE;i++){
+			extra_lines[1+i]=lines->a[-1]->week_line(7*3600*24/WEEK_PHASE*i,extra_lines[1+i],extra_lines_startpos,skiplast);
+			week_alters+=({7*3600*24/WEEK_PHASE*i});
+		}
+		extra_lines[-1]=lines->a[-1]->month_line(0,extra_lines[-1],extra_lines_startpos,skiplast);
+		extra_lines_startpos=sizeof(lines->a[-1])-skiplast;
+	};/*}}}*/
+
+
+	int interval=Candle.all_intervals[0];
+	int active=0;
+	float last_curr=0.0;
+	float curr=0.0;
+
+	array rates=({});
+
+
+	mapping strategy2rate=([]);
+	mapping strategy2rangerate=([]);
+	mapping strategy2maxrate=([]);
+	mapping strategy2maxdrop=([]);
+	//mapping strategy2recentrate=([]);
+	//mapping strategy2recentdrop=([]);
+
+	array last_timevals=allocate(sizeof(Candle.all_intervals)+CALENDAR_LINE_COUNT,0);
+
+	void handle_level_advance_open(object lines,int i)
+	{
+
+#define SET_IF(X,VAR,VAL) ((X)?((VAR=VAL),(X)):0)
+#define SET_IFNOT(X,VAR,VAL) ((X)?(X):((VAR=VAL),0))
+
+#define KDJIN_KDJOUT(KEY,HOLD1,HOLD2) (!last_strategies[KEY]&&!last_holds[HOLD1]&&holds[HOLD1]||last_strategies[KEY]&&!(last_holds[HOLD2]&&!holds[HOLD2]))
+#define KDJIN_CC_KDJOUT(KEY,HOLD1,HOLD2,N) (!last_strategies[KEY]&&!last_holds[HOLD1]&&holds[HOLD1]||last_strategies[KEY]&&!(ccvals[HOLD_WEEK]>=N&&!holds[HOLD2]))
+//#define KDJIN_CC_MAOUT(KEY,HOLD1,HOLD2,N) (!last_strategies[KEY]&&!last_holds[HOLD1]&&holds[HOLD1]||last_strategies[KEY]&&!(ccvals[HOLD_WEEK]>=N&&item->closeval<mavals[HOLD2]))
+
+#define KDJIN_KDJOUTGATE_RATEOUT(KEY,HOLD1,HOLD2,K,KD,B,N,ND,R,N2,R2) (\
+		 (/*enter*/\
+			!last_strategies[KEY]&&(\
+				(SET_IF(!last_holds[HOLD1]&&holds[HOLD1],why,"kdjin")\
+				||SET_IF(sizeof(rates)>=(K)&&Array.all(rates[<(K)+(KD)-1..<(KD)],`<,(B)),why,"ratein")\
+				)\
+			)\
+		 )\
+		 ||\
+		 (/*leave*/\
+			last_strategies[KEY]&&(\
+				!(SET_IF(last_holds[HOLD2]&&!holds[HOLD2]&&gate[KEY],why,"kdjout"))\
+				&&!(SET_IF(sizeof(rates)>=(N)&&Array.all(rates[<(N)+(ND)-1..<(ND)],`>,(R)),why,"rateout"))\
+				)\
+			)\
+		)
+				//&&!(SET_IF((ccvals[HOLD_WEEK]>=8&&`*(1.0,@rates[<(N2)-1..])>(R2)/*&&`*(1.0,@rates[<(N2)*2-1..(N2)])>(R2)*/),why,"dayrateout"))\
+
+#define KDJIN_RATEOUT(KEY,HOLD1,HOLD2,K,B,N,R) (!last_strategies[KEY]&&(\
+			(!last_holds[HOLD1]&&holds[HOLD1])\
+			||(sizeof(rates)>=K&&Array.all(rates[<K-1..],`<,B))\
+			)||last_strategies[KEY]&&(\
+				!(sizeof(rates)>=N&&Array.all(rates[<N-1..],`>,R))\
+				))
+
+		
+		strategies=([
+				"in":1,
+				"wiwo":holds[HOLD_WEEK],
+
+				//"dkwo":holds[HOLD_DAY]||last_strategies["dkwo"]&&holds[HOLD_WEEK],
+				//"aiao":holds[sizeof(Candle.all_intervals)+1+active_phase], //使用周KDJ的相位
+				//"worm":holds[HOLD_WEEK]||holds[HOLD_MONTH],
+				//"wkmo":holds[HOLD_WEEK]||last_strategies["wkmo"]&&holds[HOLD_MONTH],
+
+				]);
+
+		if(objectp(gate)&&object_program(gate)==ANY){
+			gate=([]);
+		}
+
+		object m;
+		if(follow_stdin_flag){
+			m=Matrix.Matrix(([
+						"enter_rate":({1,16,1}),
+						"leave_rate":({1,16,1}),
+						"gate_delta":({2,5,1}),
+						]));
+		}else{
+			m=Matrix.Matrix(([
+						"enter_rate":({1,11,1}),
+						"leave_rate":({1,11,1}),
+						"gate_delta":({2,5,1}),
+
+						//"delay_level":({0,5,1}),
+
+						]));
+		}
+
+		m->_foreach(lambda(mapping m){
+				int k=m->enter_rate;
+				int i=m->leave_rate;
+				int j=m->gate_delta;
+				int q=m->delay_level;
+
+				string key;
+				if(!follow_stdin_flag){
+					key=sprintf("b%ds%dg%dq%d",k,i,j,q);
+				}else{
+					key=sprintf("b%ds%dg%d",k,i,j);
+				}
+				string why;
+				strategies[key]=KDJIN_KDJOUTGATE_RATEOUT(key,HOLD_WEEK,HOLD_MONTH,
+						2,q,1-1.0*k/100,
+						2,q,1+1.0*i/100,
+						0,0.0//4*24,1+10.0*q/100
+						);
+				if(why)
+					strategies_why[key]=why;
+				/*strategies[key]=KDJIN_RATEOUT(key,HOLD_WEEK,HOLD_MONTH,
+						2,1-1.0*k/100,
+						2,1+1.0*i/100
+						);*/
+				if(last_strategies[key]==0&&strategies[key]==1){
+					gate[key]=0;
+				}
+				if(sizeof(rates)>=2&&Array.all(rates[<2-1..],`>,1+1.0*(i-j)/100)){
+					gate[key]=1;
+				}
+				if(last_strategies[key]==1&&strategies[key]==0){
+					gate[key]=0;
+				}
+				if(!follow_stdin_flag){
+					//if(strategies_why[key]=="kdjin"){//TEST 没有意义，因为我们会在月KDJ下跌的时候由周KDj进去
+						gate[key]=1;
+					//}
+				}
+		});
+		if(!follow_stdin_flag){
+			do{
+				foreach(SortMapping.sort_values(strategy2rangerate,1);string key;float value){
+					if(has_prefix(key,"dynamic")){
+						continue;
+					}
+					int k,i,j;
+					if(sscanf(key,"b%ds%dg%d",k,i,j)!=3)
+						continue;
+					if(k>10||i>10)
+						continue;
+					for(int q=0;q<=5;q++){
+						if(value>5.0){
+							string key1=sprintf("b%ds%dg%d",k+q,i+q,j);
+							strategies["dynamic"+q]=strategies[key1];
+							strategies_why["dynamic"+q]=strategies_why[key1];
+						}else{
+							strategies["dynamic"+q]=strategies["in"];
+						}
+					}
+					break;
+				}
+				strategies["dynamic"]=strategies["in"];
+				foreach(SortMapping.sort_values(strategy2rangerate,1);string key;float value){
+					if(key!="dynamic"&&has_prefix(key,"dynamic")){
+						if(value>25.0){
+							strategies["dynamic"]=strategies[key];
+							strategies_why["dynamic"]=strategies_why[key];
+						}else{
+							strategies["dynamic"]=strategies["dynamic0"];
+							strategies_why["dynamic"]=strategies_why["dynamic0"];
+						}
+						break;
+					}
+				}
+			}while(0);
+		}
+
+		/*for(int i=5;i<10;i+=1){
+			string k="wic"+i+"wo";
+			strategies[k]=KDJIN_CC_KDJOUT(k,HOLD_WEEK,HOLD_WEEK,i);
+		}*/
+		foreach(strategies;string key;int val){
+			strategies[key]=ttvals[HOLD_WEEK]>20&&val;
+		}
+
+		last_holds=copy_value(holds);
+		//werror("i=%d\n",i);
+
+		object item=lines->line(Candle.all_intervals[start_interval_level])->a[i];
+
+		if(item->volume){
+			string s="";
+			s+=sprintf("- %s %f %s",Calendar.ISO.Second(item->timeval)->format_time_short(),last_curr,map(holds,`+,"")*" ");
+			foreach(SortMapping.sort_values(strategy2rate);string key;float rate){
+				s+=sprintf(" %s:%d->%d(%s:%s)",key,last_strategies[key],strategies[key],strategies_why[key]||"",gate[key]?"o":"x");
+			}
+			s+="\n";
+			if(out_flag){
+				Stdio.append_file(outfilestr,s);
+			}else{
+				write("%s",s);
+			}
+		}
+		if(strategy_db)
+			strategy_db[sprintf("%d",item->timeval)]=encode_value(({strategies,strategies_why}));
+	};
+
+	void handle_level_advance_close(object lines,int i)/*{{{*/
+	{
+		//werror("handle_level_advance_close: i=%d\n",i);
+		object item=lines->line(Candle.all_intervals[start_interval_level])->a[i];
+		last_curr=curr;
+		if(item->volume){
+			curr=item->closeval;
+		}
+		if(last_curr!=0.0)
+			rates+=({curr/last_curr});
+
+		void handle_item(int n,object item,mixed info,int week_mode,int|void week_base)/*{{{*/
+		{
+			//werror("handle_item: n=%d %O %O",n,info,item->save());
+			if(item->volume){
+				active=1;
+				if(last_curr!=item->closeval){
+					werror("last_curr=%f curr=%f item->closeval=%f n=%d\n",last_curr,curr,item->closeval,n);
+					throw(({"closeval not match.\n",backtrace()}));
+				}
+				//curr=item->closeval;
+				int lk,ld,lj,k,d,j;
+				if(!week_mode){
+					[object ltm,lk,ld,lj]=kdjs[n]->query();
+#define OCKDJ
+#ifdef OCKDJ
+					[object tm,k,d,j]=kdjs[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,max(item->openval,item->closeval),min(item->openval,item->closeval));
+#else
+					[object tm,k,d,j]=kdjs[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,item->maxval,item->minval);
+#endif
+				}else{
+					[object ltm,lk,ld,lj]=kdjs[n]->query();
+#define OCKDJ
+#ifdef OCKDJ
+					[object tm,k,d,j]=kdjs[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,max(item->openval,item->closeval),min(item->openval,item->closeval));
+#else
+					[object tm,k,d,j]=kdjs[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,item->maxval,item->minval);
+#endif
+
+					int days=WEEK_AVG_SIZE;
+					for(int i=1;i<days;i++){
+						int lk1,ld1,lj1,k1,d1,j1;
+						[object ltm,lk1,ld1,lj1]=kdjs[week_base+((n+i-week_base)%WEEK_PHASE)]->query(1);
+						[object tm,k1,d1,j1]=kdjs[week_base+((n+i-week_base)%WEEK_PHASE)]->query();
+						lk+=lk1;ld+=ld1;lj+=lj1;k+=k1;d+=d1;j+=j1;
+					}
+					lk/=days; ld/=days; lj/=days; k/=days; d/=days; j/=days;
+				}
+				[int tt,int cc]=ccs[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,item->maxval,item->minval);
+				int mav=mas[n]->feed(Calendar.ISO.Second(item->timeval),item->openval,item->closeval,item->maxval,item->minval);
+
+				int upflag=k>d;
+				int gx=k>d&&lk<ld;
+				int dx=k<d&&lk>ld;
+				int hold=dx||upflag&&!gx;
+
+				holds[n]=hold;
+				ccvals[n]=cc;
+				ttvals[n]=tt;
+				mavals[n]=mav;
+			}
+		};/*}}}*/
+		for(int n=start_interval_level;n<sizeof(Candle.all_intervals);n++){
+			int timeval=Time.align(item->timeval,Candle.all_intervals[n]);
+			if(timeval>last_timevals[n]){ //if(timeval==item->timeval)
+				last_timevals[n]=timeval;
+				object line=lines->line(Candle.all_intervals[n]);
+#ifdef USING_BINARY_SEARCH
+
+				int pos=line->search(timeval);
+				//werror("n=%d,pos=%d\n",n,pos);
+				if(pos>=0){
+						if(pos>0)
+							handle_item(n,line->a[pos-1],pos-1,0);
+				}else{
+					throw(({Candle.all_intervals[n]+" not found.\n",backtrace()}));
+				}
+#else
+
+				int found;
+				foreach(line->a;int i;object item){
+					if(line->a[i]->timeval==timeval){
+						if(i>0)
+							handle_item(n,line->a[i-1],i-1,0);
+						found=1;
+						break;
+					}
+				}
+				if(!found){
+					throw(({Candle.all_intervals[n]+" not found.\n",backtrace()}));
+				}
+#endif
+			}
+
+		}
+
+		int active_phase;
+		foreach(extra_lines;int nn;object line){
+			int n=sizeof(Candle.all_intervals)+nn;
+			string key;int alter;
+			if(nn==0){
+				key="day";alter=0;
+			}else if(nn-1>=0&&nn-1<WEEK_PHASE){
+				key="week";alter=week_alters[nn-1];
+			}else{
+				key="month";alter=0;
+			}
+			int timeval=Calendar.ISO.Second(item->timeval+alter)[key]()->unix_time()-alter;
+			if(timeval>last_timevals[n]){
+				last_timevals[n]=timeval;
+
+#ifdef USING_BINARY_SEARCH
+				int pos=line->search(timeval);
+				if(pos>=0){
+						if(pos>0){
+							handle_item(n,line->a[pos-1],pos-1,nn>=1&&nn<1+WEEK_PHASE,sizeof(Candle.all_intervals)+1);
+							if(nn>=1&&nn<1+WEEK_PHASE){
+								active_phase=nn-1;
+							}
+						}
+				}else{
+					throw(({key+" not found.\n",backtrace()}));
+				}
+#else
+
+				int found;
+				foreach(line->a;int i;object item){
+					if(item->timeval==timeval){
+						if(i>0){
+							handle_item(n,line->a[i-1],i-1,nn>=1&&nn<1+WEEK_PHASE,sizeof(Candle.all_intervals)+1);
+							if(nn>=1&&nn<1+WEEK_PHASE){
+								active_phase=nn-1;
+							}
+						}
+						found=1;
+						break;
+					}
+				}
+				if(!found){
+					throw(({key+" not found.\n",backtrace()}));
+				}
+#endif
+			}
+		}
+
+		string oyd=strategy_db[sprintf("%d",item->timeval-365*24*3600)];
+		mapping oneyear=([]);
+		if(oyd){
+			oneyear=decode_value(oyd);
+		}
+
+		last_strategies=copy_value(strategies);
+		foreach(strategies;string key;int hold){
+			strategy2rate[key]=strategy2rate[key]||1.0;
+			strategy2rangerate[key]=strategy2rangerate[key]||1.0;
+			strategy2maxrate[key]=strategy2maxrate[key]||1.0;
+			//strategy2recentrate[key]=strategy2recentrate[key]||({});
+			strategy2maxdrop[key]=strategy2maxdrop[key]||1.0;
+			//strategy2recentdrop[key]=strategy2recentdrop[key]||1.0;
+			if(hold){
+				strategy2rate[key]*=rates[-1];
+				strategy2rangerate[key]*=rates[-1];
+				if(oneyear[key]){
+					strategy2rangerate[key]/=rates[-365*24*4];
+				}
+				//strategy2recentrate[key]+=({strategy2rate[key]});
+				//strategy2recentrate[key]=strategy2recentrate[key][<29..];
+				strategy2maxrate[key]=max(strategy2maxrate[key],strategy2rate[key]);
+				strategy2maxdrop[key]=min(strategy2maxdrop[key],strategy2rate[key]/strategy2maxrate[key]);
+				/*if(sizeof(strategy2recentrate[key])){
+					strategy2recentdrop[key]=strategy2rate[key]/(`+(0.0,@strategy2recentrate[key])/(sizeof(strategy2recentrate[key])));
+				}*/
+			}
+		}
+		if(active){
+			string s="";
+			s+=sprintf("+ %s %f %f",Calendar.ISO.Second(item->timeval)->format_time_short(),last_curr,rates[-1],/*map(holds,`+,"")*" "*/);
+			float maxrate=max(@values(strategy2rate));
+			foreach(SortMapping.sort_values(strategy2rate);string key;float rate){
+				s+=sprintf(" %s=%.1f,%.2f,%.2f",key,rate,1-strategy2maxdrop[key],rate/maxrate);
+			}
+			s+="\n";
+			if(out_flag){
+				Stdio.append_file(outfilestr,s);
+			}else{
+				write("%s",s);
+			}
+		}
+	};/*}}}*/
+
+	object lines=Candle.Lines(savepath+"/"+inst,"r");
+	update_extra_lines(lines,1);
+	for(int i=0;i<sizeof(lines->line(Candle.all_intervals[start_interval_level])->a);i++){
+		if(i-1>=0)
+			handle_level_advance_close(lines,i-1);
+		handle_level_advance_open(lines,i);
+	}
+	lines->close();
+	if(follow_stdin_flag){
+		signal(signum("SIGINT"),0);
+		object port=Protocols.HTTP.Server.Port(handle_request,http_port,http_ip);
+		object pf;
+		pf=Candle.ParseFile(savepath,lambda(string inst){
+			return inst!="";
+			},lambda(int level){
+				if(level==sizeof(Candle.all_intervals)-1){
+					update_extra_lines(pf->parsers[inst],1);
+				}
+				if(level>=start_interval_level){
+					int p0=sizeof(pf->parsers[inst]->a[start_interval_level]->a)-2;
+					int p=p0;
+					while(pf->parsers[inst]->a[start_interval_level]->a[p]->volume==0&&p>0)
+						p--;
+					while(p<=p0){
+						handle_level_advance_close(pf->parsers[inst],p);
+						handle_level_advance_open(pf->parsers[inst],p+1);
+						p++;
+					}
+				}
+			});
+		object t=Thread.Thread(lambda(){
+			pf->parse(Stdio.stdin);
+			pf->close();
+			exit(0);
+		});
+		return -1;
+	}
+}

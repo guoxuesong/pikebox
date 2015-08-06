@@ -1,0 +1,101 @@
+<html><head><title>Pike Reference Manual - load_feature()</title>
+<link rel='stylesheet' href='../../style.css' /></head>
+<body topmargin='0' leftmargin='0' marginheight='0' marginwidth='0'
+      bgcolor='#ffffff' text='#000000' link='#000099' alink='#002040'
+      vlink='#000099'>
+
+<table width="100%">
+  <tr>
+    <td colspan='3'></td>
+    <td colspan='2' align='right'>Extracted at 2012-04-11.</td>
+  </tr>
+  <tr>
+    <td width="0%"><img src="../..//images/unit.gif" alt="" width="10" height="1"></td>
+    <td width="1%">
+      <a href="http://pike.ida.liu.se/"><img src="../..//images/pike_logo.gif"
+      border="0" alt="pike.ida.liu.se" width="181" height="41" hspace="5"></a></td>
+    <td width="0%"><img src="../..//images/unit.gif" alt="" width="10" height="1"></td>
+    <td width="99%">
+      <table align="center" border="0" width="100%" cellspacing="0" cellpadding="0" valign="middle">
+        <tr>
+          <td width="1%" align="right"><img src="../..//images/pike_line_left.gif" alt="" border="0" width="5" height="11"></td>
+          <td background="../..//images/pike_line_middle.gif" width="98%"><img src="../..//images/unit.gif" alt="" border="0" width="11" height="11"></td>
+          <td width="1%" align="left"><img src="../..//images/pike_line_right.gif" alt="" border="0" width="5" height="11"></td>
+        </tr>
+      </table>
+    </td>
+    <td width="0%"><img src="../..//images/unit.gif" alt="" width="10" height="1"></td>
+  </tr>
+  <tr>
+    <td colspan="5"><img src="../..//images/unit.gif" alt="" width="1" height="10"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width='180' valign='top' bgcolor='#f0f0f0'><a href='../../index.html'><b>[Top]</b></a><br />
+<table border='0' cellpadding='1' cellspacing='0' class='sidebar'><tr><td nowrap='nowrap'><br /><b>Classes</b></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/Func.html'><b>Func</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/dbase.html'><b>dbase</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/globald.html'><b>globald</b></a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/run.html'><b>run</b></a></td></tr>
+<tr><td nowrap='nowrap'><br /><b>Methods</b></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;load_feature()</td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/load_system.html'>load_system()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/main.html'>main()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/main_thread.html'>main_thread()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/safe_write_file.html'>safe_write_file()</a></td></tr>
+<tr><td nowrap='nowrap'>&nbsp;<a href='../../ex/predef_3A_3A/this_app.html'>this_app()</a></td></tr>
+</table></td>
+    <td width='520' valign='top'>
+
+    <table border="0" width="520" bgcolor="#e0e0e0"
+           cellpadding="0" cellspacing="4" class='sidebar'>
+      <tr>
+        <td valign="middle">
+	  <a href="../../ex/predef_3A_3A/run.html"><img src="../../images/prev.gif" hspace="3"
+	         border="0" alt="previous" >run</a>
+          <br />
+	</td>
+	<td align="right" valign="middle">
+	  <a href="../../ex/predef_3A_3A/load_system.html">load_system()<img src="../../images/next.gif" hspace="3"
+	          border="0" alt="next" ></a>
+	  <br />
+	</td>
+      </tr>
+    </table>
+
+    <h1>Method load_feature()</h1>
+    
+
+<hr clear='all' size='1' noshadow='noshadow' />
+<dl>
+<dt><font face='Helvetica'><font face='Helvetica'>Method</font>
+<font size='+1'><b>load_feature</b></font>
+</font><dt>
+<dd><p><tt><font color='#202020'>program</font> <b><font color='#000066'>load_feature</font>(</b><font color='#202020'>string</font> <font color='#005080'>name</font><b>)</b></tt></p></dd>
+
+<dt><font face='Helvetica'>Description</font><dt>
+<dd><font face='Helvetica'><p>Load a MCS FEATURE. A MCS FEATURE is a Pike file with extra support of keyword MIXIN. MIXIN is just like class besides the following facts:</p>
+<p>     装在一个MCS功能模块，一个MCS功能模块是一个Pike文件，在这个Pike文件中可以使用关键字MIXIN，MIXIN是关键字class的别名，并提供以下功能：</p>
+<p>	When a MCS system IMPORT a FEATURE, for every MIXIN in the FEATURE if there is a class in the in the MCS system, which has the same name of the MIXIN, the class in the MCS system will inherit the MIXIN.</p>
+<p>     当一个MCS系统IMPORT了一个MCS功能模块，如果MCS系统中有和功能模块中的MIXIN同名的class，该class将继承该MIXIN。</p>
+</font></dd>
+<dt><font face='Helvetica'>Parameter <tt><font color='#8000F0'>name</font></tt></font><dt>
+<dd></dd><dd><font face='Helvetica'><p>Name of the FEAUTRE, always be capital and with a prefix of "F_", for example F_EXAMPLE </p>
+<p>	功能模块的名字，必须大写，并且以“F_”开始，例如 F_EXAMPLE</p>
+</font></dd>
+<dt><font face='Helvetica'>Note</font><dt>
+<dd><font face='Helvetica'><p>The description file path of F_EXAMPLE is "features/example.pike". Before loading the FEATURE F_EXAMPLE, all the file has a suffix of ".pike" in "features/example.d" 
+     will be loaded using load_system with noaddconst=0, that means all the classes would be exported as constant and can be used in "features/example.pike" directly.</p>
+<p>	功能模块 F_EXAMPLE 的描述文件的路径是“features/example.pike”。当功能模块 F_EXAMPLE 被装载前，目录“features/example.d”中所有.pike文件将会被当作MCS系统装载，
+	并且其中所有的类定义都被暴露为常数，“features/example.pike”可以直接使用这些类定义。</p>
+</font></dd></dl>
+
+
+    <hr size='1' noshade='1' />
+    </td>
+  </tr>
+</table>
+</body>
+</html>

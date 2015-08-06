@@ -1,0 +1,127 @@
+//! Run wget(1) to fetch files from Web
+//!
+//! GNU Wget is a free utility for non-interactive download of files from the Web.  It supports HTTP, HTTPS,
+//! and FTP protocols, as well as retrieval through HTTP proxies.
+//!
+//! More info see wget manpage.
+
+//! @param url
+//!   The url to be fetched.
+//! @headers
+//!   Use --header and --save-headers with wget, eche item of headers will send with a --header, 
+//!   and the headers of response will be stored in this mapping. the status line such as
+//!   "HTTP/1.1 200 OK" is split to three fields "PROTOCOL": "HTTP/1.1", "REASON": "OK", "STATUS": 200,
+//! @extra_args
+//!   Pass to wget directly.
+//!
+//! @note
+//!   wget options "-q" "-O -" is always used
+
+#define TIMEOUT 600
+
+string `()(string url,mapping|string|void headers,void|string|function(mapping,int:void) cb,mixed ... extra_args)
+{
+	if(stringp(cb)){
+		extra_args=({cb})+extra_args;
+		cb=0;
+	}
+	if(stringp(headers)){
+		extra_args=({headers})+extra_args;
+		headers=0;
+	}
+		
+	if(sizeof(extra_args)==0){
+		extra_args=({"--tries=1"});
+	}
+	//extra_args+=({"-q"});
+	if(headers){
+		extra_args+=({"--save-headers"});
+		foreach(headers;string k;string d){
+			if(stringp(d)){
+				if(lower_case(k)=="user-agent"){
+					extra_args+=({"-U",d});
+				}else{
+					extra_args+=({sprintf("--header=%s: %s",k,d)});
+				}
+			}
+		}
+		foreach(headers;string k;string d){
+			m_delete(headers,k);
+		}
+	}
+	string header_buffer="";
+	int bytes_download;
+	int active_time=time();
+	object p;
+	object watchdog;
+	void watchdog_main()
+	{
+		while(p&&p->status()!=2){
+			//werror("here %d %d\n",time(),active_time);
+			if(time()-active_time>TIMEOUT){
+				//werror("kill\n");
+				p->kill(signum("SIGKILL"));
+			}
+			sleep(0.1);
+		}
+	};
+	void create_watchdog()
+	{
+		watchdog=Thread.Thread(watchdog_main);
+	};
+	mapping m=Process78.run(({"wget",url,"-O","-"})+extra_args,(["stdout_watcher":lambda(string s){
+				active_time=time();
+				if(header_buffer){
+					header_buffer+=s;
+					array a=header_buffer/"\r\n\r\n";
+					if(sizeof(a)>1){
+						array headers_array=a[0]/"\r\n";
+						string protocol;
+						int status;
+						string reason;
+						sscanf(headers_array[0],"%s %d %s",protocol,status,reason);
+						if(headers){
+							headers["PROTOCOL"]=protocol;
+							headers["STATUS"]=status;
+							headers["REASON"]=reason;
+							foreach(headers_array,string s){
+								string k,d;
+								if(sscanf(s,"%s: %s",k,d)==2)
+									headers[lower_case(k)]=d;
+							}
+						}
+						bytes_download=sizeof(header_buffer)-sizeof(a[0] )-4;
+						header_buffer=0;
+					}
+				}else{
+					bytes_download+=sizeof(s);
+				}
+				if(cb){
+					cb(headers,bytes_download);
+				}
+				},
+					"handle_process":lambda(object _p){
+						p=_p;
+						create_watchdog();
+					},
+	]));
+	watchdog&&watchdog->wait();
+	if(m["stdout"]=="")
+		werror("stderr: %s\n",m["stderr"]);
+	if(headers){
+		array a=m["stdout"]/"\r\n\r\n";
+		return a[1..]*"\r\n\r\n";
+	}else{
+		return m["stdout"];
+	}
+}
+
+
+void main()
+{
+	mapping headers=([]);
+	write("%s",wget("http://www.google.com",headers));
+	write("%O",headers);
+}
+
+

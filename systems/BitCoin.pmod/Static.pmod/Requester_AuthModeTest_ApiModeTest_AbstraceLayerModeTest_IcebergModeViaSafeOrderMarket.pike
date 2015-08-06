@@ -1,0 +1,1 @@
+inherit BitCoin.Class.Requester_AuthModeTest_ApiModeTest_AbstraceLayerModeTest_IcebergModeViaSafeOrderMarket._class.Static;

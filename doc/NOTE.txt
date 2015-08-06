@@ -1,0 +1,39 @@
+20140702
+========
+
+开始在这个目录中维护Pike相关的项目，在这个时间点以后应该置信这个目录下的变化。
+
+以下是一些备忘：
+
+- 从 Pike-v7.9.5-20130829.tar.gz 开始，这是我确信期货项目正在使用的版本
+- Spear-20131020.v7.9.5.patch 是适用于 Pike-v7.9.5-20130829.tar.gz 的 Spear补
+  丁，使用这个补丁
+- Spear-20120203.v7.8.352.patch 是适用于 7.8.352 的 Spear 补丁
+- Public.pmod.zip 是 Nix.Math 有BUG，这是在期货项目中正在使用的版本，据我的记
+  忆，现在其实没有被用到，因此不予纳入
+- 已升级到 Pike-v7.9.5-20140703.tar.gz 但 aliyun 上任然在使用
+  Pike-v7.9.5-20130829.tar.gz 并且要持续使用下去
+
+20140703
+========
+
+装 Pike-v7.9.5 的备忘：
+
+- 要先装 nettle
+- 先跑 Pike-v7.9.5/src/run_autoconfig
+- 为了装ffmpeg
+  + rpm -i epel-release-6-8.noarch.rpm
+  + yum localinstall --nogpgcheck http://download1.rpmfusion.org/free/el/updates/6/i386/rpmfusion-free-release-6-1.noarch.rpm http://download1.rpmfusion.org/nonfree/el/updates/6/i386/rpmfusion-nonfree-release-6-1.noarch.rpm
+  + yum install ffmpeg-devel ffmpeg-compat-devel
+- yum install gdbm-devel
+- CONFIGUREARGS="--prefix=/home/work --with-include-path=/usr/include/ffmpeg" make configure
+-cpp -I . -I /usr/include/ffmpeg/ ~/PikeBox/Pike-v7.9.5/src/modules/_Ffmpeg/codecs_auto.c | sed -n -e '/CODEC_ID/s/^.*\(CODEC_ID_[A-Z_0-9]*\),.*$/  add_integer_constant("\1",\1,0);/p' |sort|uniq >codecs_auto.h
+
+20140706
+========
+
+在 Linux dell-PowerEdge-R710 3.2.0-29-generic #46-Ubuntu SMP Fri Jul 27 17:03:23 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux 上装 Pike-v7.9.5-20130829.tar.gz 的备忘：
+
+- sh src/run_autoconfig
+- CONFIGUREARGS='--prefix=/home/work --disable-smartlink-binary' make
+

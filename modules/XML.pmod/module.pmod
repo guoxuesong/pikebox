@@ -1,0 +1,28 @@
+#! /bin/env pike
+#include <args.h>
+array|mapping parse(string data)
+{
+	array a=Parser.XML.Simple()->parse(data,lambda (string type, string name, mapping attrs, array|string data,mixed ... extra){
+			if(type=="<![CDATA["){
+				return data;
+			}else if(name){
+				if(arrayp(data)&&sizeof(data)&&mappingp(data[0])){
+					return ([name:`+(([]),@data)]);
+				}else if(arrayp(data)&&sizeof(data)==1&&stringp(data[0]))
+					return ([name:data[0]]);
+				else
+					return ([name:data]);
+			}
+			});
+	return a[0]->xml;
+}
+int main(int argc,array argv)
+{
+	mapping args=Arg.parse(argv)+([0:argv[0]]);
+	array rest=args[Arg.REST];
+	if(Usage.usage(args,"",0)){
+		return 0;
+	}
+	HANDLE_ARGUMENTS();
+}
+

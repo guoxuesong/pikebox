@@ -1,0 +1,229 @@
+#! /home/work/bin/pike
+
+class Node{
+	inherit ByValue.Item;
+}
+
+class MergeResult(object(Node)|int node,float gain){}
+
+class BestMerge(mapping nodes,float total_gain){}
+
+class GlobalGain(float ggain,mixed global_status){}
+
+class Action(string action,object(Node)|int first,object(Node)|int second){}
+
+class MergeGraph{
+	mapping(object(Node)|int:mapping(object(Node)|int:MergeResult)) nearby_mapping=([]);
+	mapping(object(Node)|int:BestMerge) best_merges=([]);
+
+	MergeResult query_merge_result(object(Node)|int first,object(Node)|int second);
+	GlobalGain query_global_gain(object(Node)|int first,object(Node)|int second,object(Node)|int result,mixed global_status);
+	array query_global_status();
+	Action choose_action(multiset actions);
+	void insert_nearby(multiset nodes)/*{{{*/
+	{
+		mapping done=([]);
+		foreach(nodes;object(Node)|int node;int one){
+			foreach(nodes-(<node>);object other;int one1){
+				nearby_mapping[node]=nearby_mapping[node]||([]);
+				object key=ByValue.Set(node,other);
+				done[key]=done[key]||query_merge_result(node,other);
+				nearby_mapping[node][other]=done[key];
+			}
+		}
+	}/*}}}*/
+	void update_best_merges(mixed global_status)/*{{{*/
+	{
+		best_merges=([]);
+		foreach(nearby_mapping;object(Node)|int node;mapping paths){
+			if(best_merges[node]==0){
+				update_best_merges_of(global_status,node);
+			}
+		}
+	}/*}}}*/
+	private void update_best_merges_of(mixed global_status,object(Node)|int node)/*{{{*/
+	{
+		float best_gain=-Math.inf;
+		mapping best_merge_nodes=([]);
+		foreach(nearby_mapping[node];object other;object merge_result){
+			object gg=query_global_gain(node,other,merge_result->node,global_status);
+			if(best_gain<gg->ggain+merge_result->gain){
+				best_gain=gg->ggain+merge_result->gain;
+				best_merge_nodes=([other:gg->global_status]);
+			}else if(best_gain==gg->ggain+merge_result->gain){
+				best_merge_nodes[other]=gg->global_status;
+			}
+		}
+		//werror("best_gain=%O\n",best_gain);
+		best_merges[node]=BestMerge(best_merge_nodes,best_gain);
+	}/*}}}*/
+	private void update_best_merges_nearby(mixed global_status,object(Node)|int node)/*{{{*/
+	{
+		update_best_merges_of(global_status,node);
+		foreach(nearby_mapping[node];object(Node)|int node1;MergeResult merge_result){
+			if(best_merges[node]==0){
+				update_best_merges_of(global_status,node1);
+			}
+		}
+	}/*}}}*/
+#if 0
+	private multiset(Action) query_best_actions()/*{{{*/
+	{
+		float best_gain=-Math.inf;
+		multiset(ByValue.Set) res=(<>);
+		foreach(best_merges;object(Node)|int node;object best_merge)
+		{
+			if(best_merge->total_gain>best_gain){
+				best_gain=best_merge->total_gain;
+				res=(multiset)map(indices(best_merge->nodes),Function.curry(ByValue.Set)(node));
+			}else if(best_merge->total_gain==best_gain){
+				res+=(multiset)map(indices(best_merge->nodes),Function.curry(ByValue.Set)(node));
+			}
+		}
+		if(best_gain>0.0)
+			return map(res,lambda(object pair){return Action("merge",@pair->a);});
+	}/*}}}*/
+#endif
+	private void remove_node(object(Node)|int node)/*{{{*/
+	{
+		foreach(nearby_mapping[node];object other;mixed ig){
+			m_delete(best_merges,other);
+			if(nearby_mapping[other])
+				m_delete(nearby_mapping[other],node);
+		}
+		m_delete(nearby_mapping,node);
+		m_delete(best_merges,node);
+	}/*}}}*/
+	void check(string info,multiset|void exclude);
+	void check_node(object(Node)|int node);
+	void perform(Action action)/*{{{*/
+	{
+		object result=nearby_mapping[action->first][action->second]->node;
+		//check_node(result);
+		/*object result2=nearby_mapping[action->second][action->first]->node;
+		if(result2!=result){
+			throw(({"ERROR\n",backtrace()}));
+		}*/
+		array a=(indices(nearby_mapping[action->first])|indices(nearby_mapping[action->second]))-({action->first,action->second});
+		/*if(action->first==0||action->second==0){
+			throw(({"ERROR\n",backtrace()}));
+		}*/
+		remove_node(action->first);
+		remove_node(action->second);
+		foreach(a,object other){
+			insert_nearby((<result,other>));
+			//check_node(other);
+		}
+		/*foreach(best_merges;object node;object best_merge){
+			if(node==action->first||node==action->second){
+				throw(({"ERROR\n",backtrace()}));
+			}
+			if(best_merge->nodes[action->first]||best_merge->nodes[action->second]){
+				throw(({"ERROR\n",backtrace()}));
+			}
+		}
+		foreach(nearby_mapping;object node;mapping paths){
+			if(node==action->first||node==action->second){
+				throw(({"ERROR\n",backtrace()}));
+			}
+			if(paths[action->first]||paths[action->second]){
+				throw(({"ERROR\n",backtrace()}));
+			}
+		}*/
+	}/*}}}*/
+	int walk(multiset done,object(Node)|int node,mixed global_status,int skip_global_changed)
+	{
+		//done[node]=1;
+
+		int count;
+		if(best_merges[node]==0){
+			update_best_merges_of(global_status,node);
+		}
+		multiset res=(<>);
+		foreach(best_merges[node]->nodes;object(Node)|int node1;mixed new_global_status){
+			if(skip_global_changed==0||equal(new_global_status,global_status)){
+				/*if(!Program.inherits(node1,Node)&&!intp(node1)){
+					werror("%O",typeof(node1));
+					throw(({"ERROR\n",backtrace()}));
+				}*/
+
+				if(best_merges[node1]==0){
+					update_best_merges_of(global_status,node1);
+				}
+				if(best_merges[node1]->nodes[node]&&best_merges[node1]->total_gain>0.0){
+					res[ByValue.Set(node,node1)]=1;
+				}
+			}
+		}
+		if(sizeof(res)){
+			array old_global_status=global_status;
+			//check("pre_choose");
+			object action=choose_action(map(res,lambda(object bv){return Action("merge",@bv->a);}));
+			object result=nearby_mapping[action->first][action->second]->node;
+			array new_global_status=best_merges[action->first]->nodes[action->second];
+			//check("pre_perform",(<action->first,action->second>));
+			if(action){
+				perform(action);
+				//check("post_perform");
+				count++;
+			}
+
+			//array new_global_status=query_global_status();
+			if(!equal(old_global_status,new_global_status)){
+				best_merges=([]);
+				//merge_graph->update_best_merges(new_global_status);
+			//}else{
+				//count+=walk(done,result,new_global_status,1);
+			}
+		}
+		return count;
+	}
+	int merge()
+	{
+		best_merges=([]);
+		int total;
+		int count;
+		//update_best_merges(query_global_status());
+		mixed global_status=query_global_status();
+		do{
+			count=0;
+			multiset done=(<>);
+			foreach(nearby_mapping;object(Node)|int node;mapping paths){
+				if(nearby_mapping[node]&&!done[node]){
+					mixed global_status1=query_global_status();
+					if(!equal(global_status1,global_status))
+							throw(({"ERROR\n",backtrace()}));
+					count+=walk(done,node,global_status,1);
+				}
+			}
+			done=(<>);
+			foreach(nearby_mapping;object(Node)|int node;mapping paths){
+				if(nearby_mapping[node]&&!done[node]){
+					mixed global_status1=query_global_status();
+					if(!equal(global_status1,global_status))
+							throw(({"ERROR\n",backtrace()}));
+					int d=walk(done,node,global_status,0);
+					count+=d;
+					if(d){
+						global_status=query_global_status();
+						break;
+					}
+				}
+			}
+			total+=count;
+		}while(count);
+		return total;
+	}
+}
+
+#include <args.h>
+int main(int argc,array argv)
+{
+	mapping args=Arg.parse(argv)+([0:argv[0]]);
+	array rest=args[Arg.REST];
+	if(Usage.usage(args,"",0)){
+		return 0;
+	}
+	HANDLE_ARGUMENTS();
+}
+

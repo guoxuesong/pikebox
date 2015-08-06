@@ -1,0 +1,107 @@
+Buildfile: build.xml
+
+libs:
+
+javac:
+    [javac] Compiling 1 source file to C:\gwt-2.2.0\Brain3GWT\war\WEB-INF\classes
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:593: 意外的类型
+    [javac] 找到： 类型参数 DropControllerType 
+    [javac] 需要： 类
+    [javac] public  class MyDropController<DropControllerType,PanelType> extends DropControllerType{
+    [javac]                                                                      ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:604: 找不到符号
+    [javac] 符号： 类 DragContext
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT.MyDropController<DropControllerType,PanelType>
+    [javac] 	protected Widget newPositioner(DragContext context)
+    [javac] 	                               ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:609: 找不到符号
+    [javac] 符号： 类 DragContext
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT.MyDropController<DropControllerType,PanelType>
+    [javac] 	public void onPreviewDrop(DragContext context) throws VetoDragException
+    [javac] 	                          ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:609: 找不到符号
+    [javac] 符号： 类 VetoDragException
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT.MyDropController<DropControllerType,PanelType>
+    [javac] 	public void onPreviewDrop(DragContext context) throws VetoDragException
+    [javac] 	                                                      ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:562: 不兼容的类型
+    [javac] 找到： java.lang.Object
+    [javac] 需要： java.lang.String[]
+    [javac] 			String[] widget_tags=widget2tags.get(w);
+    [javac] 			                                    ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:572: 找不到符号
+    [javac] 符号： 方法 walkDragables(com.google.gwt.user.client.ui.Panel)
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT
+    [javac] 			walkDragables((Panel)w);
+    [javac] 			^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:580: 需要数组，但找到 java.util.ArrayList
+    [javac] 		String[] tags=Arrays.sort(widget2tags.get(draggables[i]));
+    [javac] 		                                                    ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:580: 找不到符号
+    [javac] 符号： 变量 Arrays
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT
+    [javac] 		String[] tags=Arrays.sort(widget2tags.get(draggables[i]));
+    [javac] 		              ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:589: 需要数组，但找到 java.util.ArrayList
+    [javac] 			dragControllers.get(res).makeDraggable(draggables[i]); 
+    [javac] 			                                                 ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:614: 找不到符号
+    [javac] 符号： 方法 getWidgetIndex(com.google.gwt.user.client.ui.Widget)
+    [javac] 位置： 类 java.lang.Object
+    [javac] 		int pos=myDropTarget.getWidgetIndex(positioner);
+    [javac] 		                    ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:616: 找不到符号
+    [javac] 符号： 方法 getWidgetCount()
+    [javac] 位置： 类 java.lang.Object
+    [javac] 		if(pos+1<myDropTarget.getWidgetCount()){
+    [javac] 		                     ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:617: 找不到符号
+    [javac] 符号： 方法 getWidget(int)
+    [javac] 位置： 类 java.lang.Object
+    [javac] 			next=myDropTarget.getWidget(pos+1);
+    [javac] 			                 ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:624: 找不到符号
+    [javac] 符号： 类 VetoDragException
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT.MyDropController<DropControllerType,PanelType>
+    [javac] 				throw(new VetoDragException());
+    [javac] 				          ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:639: 不兼容的类型
+    [javac] 找到： java.lang.Object
+    [javac] 需要： java.lang.String[]
+    [javac] 			String[] widget_tags=widget2tags.get(w);
+    [javac] 			                                    ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:643: 找不到符号
+    [javac] 符号： 类 DragController
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT
+    [javac] 					ArrayList<DragController> a=new ArrayList<DragController>();
+    [javac] 					          ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:643: 找不到符号
+    [javac] 符号： 类 DragController
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT
+    [javac] 					ArrayList<DragController> a=new ArrayList<DragController>();
+    [javac] 					                                          ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:645: 找不到符号
+    [javac] 符号： 变量 keys
+    [javac] 位置： 类 com.pikecross.brain3.client.Brain3GWT
+    [javac] 					for(int k=0;k<keys.size();k++){
+    [javac] 					              ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:654: 不兼容的类型
+    [javac] 找到： com.pikecross.brain3.client.Brain3GWT.MyDropController<com.allen_sauer.gwt.dnd.client.drop.VerticalPanelDropController,com.google.gwt.user.client.ui.VerticalPanel>
+    [javac] 需要： com.allen_sauer.gwt.dnd.client.drop.DropController
+    [javac] 							DropController dropController=new MyDropController<VerticalPanelDropController,VerticalPanel>(r,(VerticalPanel)w);
+    [javac] 							                              ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:659: 不兼容的类型
+    [javac] 找到： com.pikecross.brain3.client.Brain3GWT.MyDropController<com.allen_sauer.gwt.dnd.client.drop.HorizontalPanelDropController,com.google.gwt.user.client.ui.HorizontalPanel>
+    [javac] 需要： com.allen_sauer.gwt.dnd.client.drop.DropController
+    [javac] 							DropController dropController=new MyDropController<HorizontalPanelDropController,HorizontalPanel>(r,(HorizontalPanel)w);
+    [javac] 							                              ^
+    [javac] C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java:664: 不兼容的类型
+    [javac] 找到： com.pikecross.brain3.client.Brain3GWT.MyDropController<com.allen_sauer.gwt.dnd.client.drop.FlowPanelDropController,com.google.gwt.user.client.ui.FlowPanel>
+    [javac] 需要： com.allen_sauer.gwt.dnd.client.drop.DropController
+    [javac] 							DropController dropController=new MyDropController<FlowPanelDropController,FlowPanel>(r,(FlowPanel)w);
+    [javac] 							                              ^
+    [javac] 注意：C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java 使用或覆盖了已过时的 API。
+    [javac] 注意：要了解详细信息，请使用 -Xlint:deprecation 重新编译。
+    [javac] 注意：C:\gwt-2.2.0\Brain3GWT\src\com\pikecross\brain3\client\Brain3GWT.java 使用了未经检查或不安全的操作。
+    [javac] 注意：要了解详细信息，请使用 -Xlint:unchecked 重新编译。
+    [javac] 20 错误

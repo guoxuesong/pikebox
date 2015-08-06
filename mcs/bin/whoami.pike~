@@ -1,0 +1,11 @@
+int main(int argc,array argv)
+{
+	if(THIS_SESSIOND->this_session()->this_player()){
+		object user=THIS_SESSIOND->this_session()->this_player();
+		werror("%s\n",user->name);
+		THIS_SESSIOND->this_session()->write("%s\n",user->name);
+	}else{
+		werror("%s\n","NOBODY");
+		THIS_SESSIOND->this_session()->write("%s\n","NOBODY");
+	}
+}

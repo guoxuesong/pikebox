@@ -1,0 +1,22 @@
+#include <global.h>
+#include <cmds.h>
+
+REGISTER(setup0);
+
+int _create_flag_=0;
+private mixed _checker_loader_=(MODULED->program_checkflag[this_program]==0?(MODULED->program_checkflag[this_program]=1,call_out(_checker_,0)):0);
+private void _checker_(){/*werror("INFO: check %O\n",this_program);*/if(this->_create_flag_==0){MODULED->error_notify("ERROR: %O 的 ::create() 没有被调用。\n",this);} }
+
+void create()
+{
+	this->_create_flag_=1;
+	//werror("create ...\n");
+	if(MODULED->program_firstflag[this_program]==0){
+		MODULED->program_firstflag[this_program]=1;
+		MODULED->apply_function(this,"setup0",1); //internal
+		MODULED->apply_function(this,"setup",1);
+	}else{
+		MODULED->apply_function(this,"setup0",0); //internal
+		MODULED->apply_function(this,"setup",0);
+	}
+}

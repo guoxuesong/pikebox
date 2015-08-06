@@ -1,0 +1,1 @@
+inherit BitCoinPlicies.Class.Gx_RangeModeHalfAnHour_SpeedModeSlow._class.Static;

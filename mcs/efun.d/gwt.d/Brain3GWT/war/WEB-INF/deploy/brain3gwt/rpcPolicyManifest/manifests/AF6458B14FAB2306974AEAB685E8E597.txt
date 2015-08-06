@@ -1,0 +1,2 @@
+serviceClass: com.pikecross.brain3.client.GreetingService
+path: ABEFC288F1AB166E68124827349914F2.gwt.rpc

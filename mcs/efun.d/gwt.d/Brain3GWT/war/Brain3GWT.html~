@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0044)http://mo123.guoxuesong.com:48080/ -->
+<!-- The DOCTYPE declaration above will set the    --><!-- browser's rendering engine into               --><!-- "Standards Mode". Replacing this declaration  --><!-- with a "Quirks Mode" doctype may lead to some --><!-- differences in layout.                        --><HTML><HEAD>
+<META content=text/html;charset=UTF-8 http-equiv=content-type>
+<META content="no-cache, must-revalidate" http-equiv=Cache-Control>
+<META content="Thu, 01 Dec 1994 16:00:00 GMT" http-equiv=Expires>
+<META content="Mon, 05 Sep 2011 10:46:27 GMT" http-equiv=Last-Modified>
+<META name=viewport content=width=device-width><!-- <link rel='stylesheet' type='text/css' href='Brain3GWT.css' /> --><LINK 
+rel=stylesheet type=text/css href="t_files/Brain3GWT2.css">
+<SCRIPT language=javascript type=text/javascript charset=UTF-8 
+src="brain3gwt/brain3gwt.nocache.js"></SCRIPT>
+
+<META name=GENERATOR content="MSHTML 8.00.7600.16700"></HEAD>
+<BODY>
+<DIV id=start align=center><xml><div class='dnd_rules' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-60' name='frame' ><div class='horizontal_panel' id='widget-1315219587-24454-56' tags='banner' width='1000' height='48' ><div class='text' id='widget-1315219587-24454-55' data='&lt;h1&gt;PikeCross&lt;/h1&gt;' ></div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-57' name='space' width='1000' height='8' ></div>
+<div class='horizontal_panel' id='widget-1315219587-24454-59' name='frame.columns' ><div class='scroll_panel' id='widget-1315219587-24454-38' width='180' height='200' click_cmd='t' ><div class='vertical_panel' id='widget-1315219587-24454-37' ><div class='button' id='widget-1315219587-24454-0' data='个人办公' click_cmd='menu.switch_submenu personal_menu' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-32' name='personal_menu' ><div class='button' id='widget-1315219587-24454-1' data='┣短消息' click_cmd='menu.switch_submenu sms' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-7' name='sms' invisible='yes' ><div class='button' id='widget-1315219587-24454-2' data='┃┣发送短消息' click_cmd='frame.set_view sms send' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-3' data='┃┣已发短消息' click_cmd='frame.set_view sms history' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-4' data='┃┣已收短消息' click_cmd='frame.set_view sms inbox' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-5' data='┃┣短消息收藏' click_cmd='frame.set_view sms fav' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-6' data='┃┣短消息草稿' click_cmd='frame.set_view sms draft' width='160' ></div>
+</div>
+<div class='button' id='widget-1315219587-24454-8' data='┣我的文件夹' click_cmd='frame.set_view mydoc default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-9' data='┣我的申请' click_cmd='frame.set_view myapply default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-10' data='┣待我审批' click_cmd='frame.set_view mysign default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-11' data='┣经我审批' click_cmd='frame.set_view mysigned default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-12' data='┣部门邮件' click_cmd='menu.switch_submenu depart_mail' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-16' name='depart_mail' invisible='yes' ><div class='button' id='widget-1315219587-24454-13' data='┃┣部门收件箱' click_cmd='frame.set_view depart_mail inbox' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-14' data='┃┣发部门邮件' click_cmd='frame.set_view depart_mail send' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-15' data='┃┣收部门邮件' click_cmd='frame.set_view depart_mail receive' width='160' ></div>
+</div>
+<div class='button' id='widget-1315219587-24454-17' data='┣个人邮件' click_cmd='menu.switch_submenu mail' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-24' name='mail' invisible='yes' ><div class='button' id='widget-1315219587-24454-18' data='┃┣个人收件箱' click_cmd='frame.set_view mail inbox' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-19' data='┃┣发邮件' click_cmd='frame.set_view mail send' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-20' data='┃┣收邮件' click_cmd='frame.set_view mail receive' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-21' data='┃┣个人邮件管理' click_cmd='frame.set_view mail manage' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-22' data='┃┣个人邮件帐号' click_cmd='frame.set_view mail accounts' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-23' data='┃┣个人邮件签名' click_cmd='frame.set_view mail footers' width='160' ></div>
+</div>
+<div class='button' id='widget-1315219587-24454-25' data='┣考勤' click_cmd='frame.set_view attendance default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-26' data='┣今日外出人员' click_cmd='frame.set_view out staff' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-27' data='┣通信录' click_cmd='menu.switch_submenu contacts' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-31' name='contacts' invisible='yes' ><div class='button' id='widget-1315219587-24454-28' data='┃┣公司通信录' click_cmd='frame.set_view contacts company' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-29' data='┃┣个人通信录' click_cmd='frame.set_view contacts personal' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-30' data='┃┣公共通信录' click_cmd='frame.set_view contacts shared' width='160' ></div>
+</div>
+</div>
+<div class='button' id='widget-1315219587-24454-33' data='人力资源' click_cmd='menu.switch_submenu hr_menu' width='160' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-36' name='hr_menu' invisible='yes' ><div class='button' id='widget-1315219587-24454-34' data='┣部门设置' click_cmd='frame.set_view depart default' width='160' ></div>
+<div class='button' id='widget-1315219587-24454-35' data='┣帐号管理' click_cmd='frame.set_view users default' width='160' ></div>
+</div>
+</div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-58' name='frame.body' width='640' ><div class='horizontal_panel' id='widget-1315219587-24454-40' ><div class='text' id='widget-1315219587-24454-39' data='hello world !' ></div>
+</div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-54' width='180' ><div class='text' id='widget-1315219587-24454-53' data='即时通信' ></div>
+<div class='horizontal_panel' id='widget-1315219587-24454-49' ><div class='text' id='widget-1315219587-24454-44' data='在线' ></div>
+<div class='text' id='widget-1315219587-24454-45' data='技术部' ></div>
+<div class='text' id='widget-1315219587-24454-46' data='总经理' ></div>
+<div class='text' id='widget-1315219587-24454-47' data='peterpan' ></div>
+<div class='text' id='widget-1315219587-24454-48' data='peterpan' ></div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-51' ><div class='text' id='widget-1315219587-24454-50' name='im.button_act' data='编辑个性签名' click_cmd='im.prompt_change_act' ></div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-52' name='im.top_prompt' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-41' ><div class='vertical_panel' id='widget-1315219587-24454-66' name='company-1314961936-7563-0' ><div class='horizontal_panel' id='widget-1315219587-24454-64' ><div class='button' id='widget-1315219587-24454-63' data='我的公司' click_cmd='menu.switch_submenu company-1314961936-7563-0:users' ></div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-62' name='company-1314961936-7563-0:users' ><div class='horizontal_panel' id='widget-1315219587-24454-69' name='admin' ><div class='button' id='widget-1315219587-24454-68' data='admin' click_cmd='frame.push_view im.look_user default admin' ></div>
+<div class='text' id='widget-1315219587-24454-67' data='' ></div>
+</div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-61' name='company-1314961936-7563-0:sub_menu3' ><div class='vertical_panel' id='widget-1315219587-24454-76' name='tech' ><div class='horizontal_panel' id='widget-1315219587-24454-74' ><div class='text' id='widget-1315219587-24454-73' data='&amp;nbsp;' ></div>
+<div class='button' id='widget-1315219587-24454-72' name='tech:button' data='技术部' click_cmd='menu.switch_submenu tech:users' ></div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-71' name='tech:users' ><div class='horizontal_panel' id='widget-1315219587-24454-79' name='peterpan' ><div class='button' id='widget-1315219587-24454-78' data='peterpan' click_cmd='frame.push_view im.look_user default peterpan' ></div>
+<div class='text' id='widget-1315219587-24454-77' data='' ></div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-82' name='rick' ><div class='button' id='widget-1315219587-24454-81' data='rick' click_cmd='frame.push_view im.look_user default rick' ></div>
+<div class='text' id='widget-1315219587-24454-80' data='' ></div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-85' name='jack' ><div class='button' id='widget-1315219587-24454-84' data='jack' click_cmd='frame.push_view im.look_user default jack' ></div>
+<div class='text' id='widget-1315219587-24454-83' data='' ></div>
+</div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-70' name='tech:sub_menu3' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-75' name='tech:prompt3' ></div>
+</div>
+</div>
+<div class='vertical_panel' id='widget-1315219587-24454-65' name='company-1314961936-7563-0:prompt3' ></div>
+</div>
+</div>
+<div class='horizontal_panel' id='widget-1315219587-24454-42' ></div>
+<div class='vertical_panel' id='widget-1315219587-24454-43' name='im.prompt' ></div>
+</div>
+</div>
+</div>
+</xml></DIV></BODY></HTML>

@@ -1,0 +1,228 @@
+MIXIN Session{
+	extern mapping id2widget;
+	extern void refresh();
+	extern Widget curr_widget;
+	extern Widget vertical_panel(array|void items);
+	extern Widget horizontal_panel(array|void items);
+	extern Widget button(string text,string|function click_cmd,string|void data_default);
+	extern Widget checkbox(string name,int|void checked,multiset|void tags);
+	extern Widget text(string data,string|void|function click_cmd,string|void data_default);
+	extern object add_syncer(object syncer);
+	extern void set_widget_onchange(Widget widget,function(string,string:void) cb);
+	extern Widget infinite_scroll_panel(object dbase,array full_path,int n,function create_widget,function(Widget:void)|void delete_notify,int|void height,int|void to_end);
+	extern int command(string cmd,array args);
+	//extern void set_prompt_panel(string name,string tag,string|void _list_panel,int|void height);
+	void set_prompt_panel(Widget panel,string tag,Widget|void _delete_on_cancel,Widget|void _list_panel,int|void height);
+	private mapping widget2info=set_weak_flag(([]),Pike.WEAK_INDICES);
+	private multiset selected_items=(<>);
+#if 0
+private void update_selected(string widget)/*{{{*/
+{
+	mapping info=widget2info[id2widget[widget]];
+	Widget select_all=curr_widget->find_widget("infinite_list:checkbox");
+	multiset m=curr_widget->find_widget((<"infinite_list_checkbox">));
+	if(!multisetp(m)){
+		if(m) m=(<m>); else m=(<>);
+	}
+	foreach(m;Widget w;int one){
+		string key=(w->name/":")[0..<1]*":";
+		if(w->data=="1"){
+			werror("update_selected add %O\n",key);
+			selected_items[key]=1;
+		}else{
+			werror("update_selected remove %O\n",key);
+			selected_items[key]=0;
+		}
+	}
+	/*
+	if(select_all&&select_all->data=="1"){
+		//string username=this_player()->name;
+		foreach(GLOBALD->query(info->fullpath),mapping m){
+			selected_items[m->_id_]=1;
+		}
+		foreach(m;Widget w;int one){
+			w->set_data("1");
+		}
+	}else{
+		int all_flag=1;
+		foreach(GLOBALD->query(info->fullpath),mapping m){
+			if(selected_items[m->_id_]==0){
+				all_flag=0;
+			}
+		}
+		if(all_flag==1){
+			selected_items=(<>);
+			foreach(m;Widget w;int one){
+				w->set_data("0");
+			}
+		}else{
+			foreach(m;Widget w;int one){
+				string key=(w->name/":")[0..<1]*":";
+				if(w->data=="1"){
+					selected_items[key]=1;
+				}else{
+					selected_items[key]=0;
+				}
+			}
+		}
+	}
+		*/
+}/*}}}*/
+#endif
+private string count_selected_items(string olddata,string widget)/*{{{*/
+{
+	//update_selected(widget);
+	int n=sizeof(selected_items);
+	if(n){
+		return sprintf("总共 %d 个项目被选择",n);
+	}else{
+		return "";
+	}
+}/*}}}*/
+#if 0
+private void collect_selected(Widget w)/*{{{*/
+{
+	Widget cb=w->find_widget((<"infinite_list_checkbox">));
+	if(cb){
+		ASSERT(objectp(cb));
+		if(cb->data=="1"){
+			selected_items[w->name]=1;
+		}else{
+			selected_items[w->name]=0;
+		}
+	}
+}/*}}}*/
+#endif
+	Widget create_checkbox_all()/*{{{*/
+	{
+		return checkbox("infinite_list:checkbox");
+	}/*}}}*/
+	Widget create_checkbox_item(string key)/*{{{*/
+	{
+		Widget res=checkbox(key+":checkbox",selected_items[key],(<"infinite_list_checkbox">));
+		set_widget_onchange(res,lambda(string old,string new){
+				if((int)new)
+					selected_items[key]=1;
+				else
+					selected_items[key]=0;
+					});
+		return res;
+	}/*}}}*/
+	Widget infinite_list(array fullpath,int size,function create_header,function create_widget,int height,int header_height,int footer_height,int to_end,mapping(string:function) actions,mapping(string:function)|void noparam_actions,string|void listpanel_name,string|void promptpanel_name,int|void promptpanel_height)/*{{{*/
+	{
+		Widget selected_counter=text("");
+		Widget action_panel;
+		Widget header,footer;
+		Widget list;
+		Widget prompt;
+		Widget res=vertical_panel
+			(({
+			  header=create_header(),
+			  list=infinite_scroll_panel(GLOBALD,fullpath,size,
+				  create_widget,
+				  0,//collect_selected,
+				  height,to_end),
+			  prompt=WIDGETD->scroll_panel(vertical_panel()),
+			  footer=action_panel=horizontal_panel
+			  (({selected_counter,"对选中的项目：",
+			    })
+			  ),
+			  }));
+		if(listpanel_name)
+			list->mark(listpanel_name);
+		if(promptpanel_name)
+			prompt->mark(promptpanel_name);
+		if(header_height)
+			header->set_height(header_height);
+		if(footer_height)
+			footer->set_height(footer_height);
+		foreach(actions;string key;function|string f)
+		{
+			action_panel->add(button(key,join(({"_infinite_list_action_",res->id,key})," ")));
+		}
+		if(noparam_actions){
+			action_panel->add(text("其它操作："));
+			foreach(noparam_actions;string key;function|string f)
+			{
+				action_panel->add(button(key,join(({"_infinite_list_noparam_action_",res->id,key})," ")));
+			}
+		}
+		Widget checkbox_all=res->find_widget("infinite_list:checkbox");
+		set_widget_onchange(checkbox_all,
+					lambda(string old,string new){
+						selected_items=(<>);
+
+						mapping info=widget2info[res];
+						multiset m=curr_widget->find_widget((<"infinite_list_checkbox">));
+						if(!multisetp(m))
+							m=(<m>);
+						foreach(GLOBALD->query(info->fullpath),mapping m){
+							selected_items[m->_id_]=(int)new;
+						}
+						foreach(m;Widget w;int one){
+							w->set_data(new);
+						}
+					} 
+					);
+		add_syncer(SimpleSyncer(selected_counter,count_selected_items,res->id));
+		widget2info[res]=(["actions":actions,
+				"noparam_actions":noparam_actions,
+				"fullpath":fullpath,
+				"list":list,
+				"prompt":prompt,
+				"listpanel_name":listpanel_name,
+				"promptpanel_name":promptpanel_name,
+				"promptpanel_height":promptpanel_height,
+				]);
+		return res;
+	}/*}}}*/
+	Widget query_scroll_panel(Widget w){
+		return widget2info[w]->list;
+	}
+	PUBLIC _infinite_list_action_(string widget,string action)/*{{{*/
+	{
+		mapping info=widget2info[id2widget[widget]];
+		set_prompt_panel(info->promptpanel_name,0,0,info->listpanel_name,info->promptpanel_height);
+		function|string f=info->actions[action];
+		if(f){
+			//update_selected(widget);
+			if(sizeof(selected_items)==0){
+				werror("_infinite_list_action_: nothing selected.\n");
+			}
+			foreach(selected_items;string key;int one){
+				if(functionp(f)){
+					mixed tt=__get_first_arg_type(_typeof(f));
+					if(tt==0||tt==ARGTYPE(string)){
+						f(key,GLOBALD->query(info->fullpath+({key})),info->fullpath,GLOBALD);
+					}else{
+						object ob=dbase_query(GLOBALD,info->fullpath+({key}));
+						f(ob);
+					}
+				}else if(stringp(f)){
+					command(f,({key}));
+				}
+			}
+			selected_items=(<>);
+			werror("_infinite_list_action_: selected_items=%O\n",selected_items);
+		}else{
+			werror("_infinite_list_action_: action not found\n");
+		}
+		refresh();
+	}/*}}}*/
+	PUBLIC _infinite_list_noparam_action_(string widget,string action)/*{{{*/
+	{
+		mapping info=widget2info[id2widget[widget]];
+		set_prompt_panel(info->promptpanel_name,0,0,info->listpanel_name,info->promptpanel_height);
+		function|string f=info->noparam_actions[action];
+		if(f){
+			if(functionp(f)){
+				f();
+			}else{
+				command(f,({}));
+			}
+		}else{
+			werror("_infinite_list_action_: action not found\n");
+		}
+		refresh();
+	}/*}}}*/
+}

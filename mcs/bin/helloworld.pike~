@@ -1,0 +1,9 @@
+int main(int argc,array argv)
+{
+	THIS_SESSIOND->this_session()->show(
+			WIDGETD->horizontal_panel(({
+				WIDGETD->textarea("ta1","hello world!"),
+				WIDGETD->button("OK","echo [ta1]"),
+				}))
+			);
+}

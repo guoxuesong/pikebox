@@ -1,0 +1,2 @@
+#define LIST_WIDGETS_TYPE_PREFIX "pikecross_list_widgets_"
+typedef __attribute__(LIST_WIDGETS_TYPE_PREFIX "any",mapping) WIDGET_MAPPING;

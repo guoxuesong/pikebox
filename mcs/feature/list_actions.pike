@@ -1,0 +1,142 @@
+MIXIN Session{
+
+	extern object curr_widget;
+	extern array set_prompt_panel(Widget panel,string tag,Widget|void _delete_on_cancel,Widget|void _list_panel,int|void height,int|void _list_panel_height);
+	//extern object curr_res;
+	extern multiset set_selected_items(Widget w,multiset m);
+	void handle_action(Widget prompt_widget,string tag,Widget object_widget,function f,mixed ... args)
+	{
+		int prompt_widget_visible=prompt_widget->visible;
+		curr_widget->clear_panels((<tag>),1);
+		array a=set_prompt_panel(prompt_widget,tag,object_widget);
+		f(@args);
+		set_prompt_panel(@a);
+	}
+	void list_actions2(object ob,string dispname,Widget prompt_widget,string tag,Widget object_widget,Widget this_checkbox,Widget curr_res,mixed ... args)/*{{{*/
+	{
+		ASSERT(ob);
+		if(curr_res){
+			set_selected_items(curr_res,(<ob->key>));
+			werror("list_actions2: curr_res=%s\n",curr_res->id);
+			this_checkbox->set_data("1");
+		}
+		if(curr_widget){
+			multiset m=curr_widget->find_widget((<"infinite_list_checkbox">));
+			if(objectp(m)) m=(<m>);
+			foreach(m||(<>);object ob;int one){
+				if(ob!=this_checkbox)
+					ob->set_data("0");
+			}
+		}
+
+		list_actions(ob,dispname,prompt_widget,tag,object_widget,@args);
+	}/*}}}*/
+	void list_actions(object ob,string dispname,Widget prompt_widget,string tag,Widget object_widget,mixed ... args)
+	{
+		//set_prompt_panel(prompt_widget,tag,object_widget);
+		int prompt_widget_visible=prompt_widget->visible;
+		//werror("list_actions: prompt_widget_visible=%d\n",prompt_widget_visible);
+		curr_widget->clear_panels((<tag>),1);
+		//werror("here 0\n");
+//		if(objectp(ob->list_actions)&&object_program(ob->list_actions)==Func) ; else{
+//			werror("%O\n",ob->data);
+//			werror("%O\n",ob->list_actions);
+//		}
+//		if(objectp(ob->list_actions)&&object_program(ob->list_actions)==Func){
+//			werror("here 01\n");
+			//mapping actions=ob->list_actions(ob->key,ob->data,ob->fullpath,ob->_dbase);
+		mapping actions;
+		if(ob->_list_actions){
+		werror("list_actions: found _list_actions\n");
+			string str=ob->_list_actions;
+			werror("_list_actions=%s\n",str);
+			if(str){
+				object f=Func(@(str/"."));
+				actions=f(ob,@args);
+				werror("actions=%O\n",actions);
+			}
+			if(actions){
+				if(sizeof(actions)==1&&actions["default"]){
+					function f=actions["default"];
+					mixed tt=__get_first_arg_type(_typeof(f));
+					if(tt==0||tt==ARGTYPE(string)){
+						werror("DEBUG9: 1 %O\n",prompt_widget);
+						array a=set_prompt_panel(prompt_widget,tag,object_widget);
+						f(ob->key,ob->data,ob->fullpath,ob->_dbase);
+						//prompt_widget->add(WIDGETD->text("DEBUG"));
+						//prompt_widget->show();
+						set_prompt_panel(@a);
+					}else{
+						werror("DEBUG9: 2 %O\n",prompt_widget);
+						array a=set_prompt_panel(prompt_widget,tag,object_widget);
+						f(ob);
+						//prompt_widget->add(WIDGETD->text("DEBUG"));
+						//prompt_widget->show();
+						set_prompt_panel(@a);
+					}
+					return;
+				}
+				else{
+					if(prompt_widget_visible){//Action提示用的Widget已经打开，可能被Action用作它用
+						
+						//prompt_widget->clear_panels();
+						//prompt_widget->hide();
+					}else{
+						werror("list_actions: show actions\n");
+						Widget p=WIDGETD->horizontal_panel(({"对"+dispname+"："}));
+						werror("here 1\n");
+						foreach(sort(indices(actions)),string key){
+							array|function f=actions[key];
+							mapping info=(["type":"normal"]);
+							if(arrayp(f)){
+								[f,info]=f;
+							}
+							if(info->type=="normal"){
+	p->add(WIDGETD->button(key,Function.curry(lambda(function f){
+				prompt_widget->clear_panels();
+				prompt_widget->hide();
+				werror("list_actions: f=%O\n",f);
+				mixed tt=__get_first_arg_type(_typeof(f));
+				if(tt==0||tt==ARGTYPE(string)){
+					array a=set_prompt_panel(prompt_widget,tag,object_widget);
+					mixed res=f(ob->key,ob->data,ob->fullpath,ob->_dbase);
+					set_prompt_panel(@a);
+					return res;
+				}else{
+					array a=set_prompt_panel(prompt_widget,tag,object_widget);
+					mixed res=f(ob);
+					set_prompt_panel(@a);
+					return res;
+				}
+				;})(f)));
+							}else if(info->type=="download"){
+	p->add(WIDGETD->file_download(key,Function.curry(lambda(function f){
+				werror("list_actions: f=%O\n",f);
+				mixed tt=__get_first_arg_type(_typeof(f));
+				if(tt==0||tt==ARGTYPE(string)){
+					array a=set_prompt_panel(prompt_widget,tag,object_widget);
+					mixed res=f(ob->key,ob->data,ob->fullpath,ob->_dbase);
+					set_prompt_panel(@a);
+					return res;
+				}else{
+					array a=set_prompt_panel(prompt_widget,tag,object_widget);
+					mixed res=f(ob);
+					set_prompt_panel(@a);
+					return res;
+				}
+							})(f)));
+							}
+						}
+						werror("here 2\n");
+						prompt_widget->add(p);
+						prompt_widget->show();
+					}
+				}
+			}
+		}else{
+			werror("list_actions: not found _list_actions\n");
+			werror("ob=%O\n",ob);
+			werror("ob->data=%O\n",ob->data);
+		}
+	}
+}

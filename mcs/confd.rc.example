@@ -1,0 +1,4 @@
+//copy this file to confd.rc and modify to config.
+SET(VIEWSTACK_LINE_HEIGHT,24);
+SET(VIEWSTACK_STACKPANEL_WIDTH,-121);
+SET(VIEWSTACK_USERINFO_WIDTH,120);

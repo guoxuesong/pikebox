@@ -1,0 +1,455 @@
+
+void init()
+{
+	init0();
+	add_constants((<COMMON_DATA_CLASS>),class{
+		string _list_actions=curr_namespace+".list_common_actions";
+		});
+#ifdef COMMON_DATA_CLASS2
+	add_constants((<COMMON_DATA_CLASS2>),class{
+		string _list_actions=curr_namespace+".list_common_actions";
+		});
+#endif
+}
+
+private void prompt_auth(object ob)
+{
+	Widget res=horizontal_panel();
+	res->add(text("请输入您的密码："));
+	res->add(textbox("passwd","",1));
+	res->add(button("确定",({lambda(string passwd){
+							cancel_prompt(res);
+							if(passwd==this_user()->passwd){
+								reprompt(res,lambda(){
+										prompt_modify_common_data(COMMON_DATA_WFSRC,ob,0,COMMON_DATA_CREATE_OBJECT,ob->father,ob->fullpath[-1]);
+								});
+							}
+						},"[passwd]"})));
+	res->add(button("取消",join(({"cancel_prompt",res->id})," ")));
+	prompt(res);
+}
+
+
+mapping list_common_actions(object ob)/*{{{*/
+{
+#ifdef COMMON_DATA_NEED_AUTH
+	return (["default":prompt_auth]);
+#else
+	return (["default":lambda(object ob){
+				prompt_modify_common_data(COMMON_DATA_WFSRC,ob,0,COMMON_DATA_CREATE_OBJECT,ob->father,ob->fullpath[-1]);
+			}
+			]);
+#endif
+}/*}}}*/
+void default_common_data_loader(object ob,object wfrt)/*{{{*/
+{
+	if(ob){
+		foreach(COMMON_DATA_MAP;string key;string var){
+			wfrt->m->vars[var]=ob->`->(key);
+		}
+	}else{
+		foreach(COMMON_DATA_MAP;string key;string var){
+			wfrt->m->vars[var]="";
+		}
+#ifdef COMMON_DATA_PRE_CREATE_OBJECT
+		COMMON_DATA_PRE_CREATE_OBJECT(wfrt);
+#endif
+	}
+}/*}}}*/
+
+void default_common_data_saver(object ob,object wfrt,int|void force_save)
+{
+	foreach(COMMON_DATA_MAP;string key;string var){
+		ob->`->=(key,wfrt->m->vars[var]);
+	}
+}
+
+void direct_common_data_loader(object ob,object wfrt)/*{{{*/
+{
+	if(ob){
+		wfrt->m->vars=copy_value(ob->vars);
+	}else{
+#ifdef COMMON_DATA_PRE_CREATE_OBJECT
+		COMMON_DATA_PRE_CREATE_OBJECT(wfrt);
+#endif
+	}
+}/*}}}*/
+
+void direct_common_data_saver(object ob,object wfrt,int|void force_save)
+{
+	ob->vars=copy_value(wfrt->m->vars);
+}
+private Widget create_prompt_modify_common_data_widget(string|function wf_src,object ob,int create_flag,function finish_cb,object container,string key,int|void using_cancel_prompt)
+{
+	object resolver=WORKFLOW->resolver->clone();
+	Widget w;
+	if(ob&&create_flag) //copy
+		resolver->add_role_handler("装载通用数据类",lambda(array args,object wfrt){
+				COMMON_DATA_LOADER(ob,wfrt);
+#ifdef COMMON_DATA_POST_COPY
+					COMMON_DATA_POST_COPY(wfrt->m->vars);
+#endif
+		});
+	else
+		resolver->add_role_handler("装载通用数据类",lambda(array args,object wfrt)
+			{
+				COMMON_DATA_LOADER(ob,wfrt);
+			});
+	resolver->add_role_handler("更新通用数据类",lambda(array args,object wfrt){
+			if(create_flag){
+				ob=finish_cb(wfrt->m->vars,container,key);
+				if(ob==0){
+					throw(UserException("没有权限",backtrace()));
+				}
+			}
+			mixed e=catch{
+				COMMON_DATA_SAVER(ob,wfrt);
+			};
+			if(e){
+				master()->handle_error(e);
+				ob=finish_cb(wfrt->m->vars,container,key);
+				mixed ee=catch{
+					COMMON_DATA_SAVER(ob,wfrt,1);
+				};
+				if(ee){
+					werror("COMMON_DATA_SAVER failed again.");
+					throw(ee);
+				}
+				if(using_cancel_prompt)
+					cancel_prompt(w);
+				//prompt(e[0]+"，已另存为"+ob->key);
+				throw(UserException(e[0]+"，已另存为"+ob->key,backtrace()));
+			}
+		});
+	object wfrt;
+	object unit=UNITS->find_unit(this_user()->unit);
+	if(functionp(wf_src)){
+		wf_src=wf_src(container,key);
+	}
+	string wf_rw=wf_src+"\n.\n装载通用数据类->*->更新通用数据类\n";
+	string wf_ro=replace(wf_src,"{*}","{-}")+"\n.\n装载通用数据类->*\n";
+	string wfname="-";
+	#ifdef COMMON_DATA_WFNAME
+		wfname=COMMON_DATA_WFNAME(container,key);
+	#endif
+	if(ob==0//新建
+		||COMMON_DATA_WRITEABLEP(ob,container,key)){
+		wfrt=WORKFLOW->start_workflow(Workflow(wfname,wf_rw),resolver);
+	}else{
+		wfrt=WORKFLOW->start_workflow(Workflow(wfname,wf_ro),resolver);
+	}
+	FRAME->pop_view();
+	return (w=WORKFLOWD->create_workflow_widget(wfrt,resolver,curr_namespace+".workflow_callback",COMMON_DATA_CENTER_WIDTH,100));
+}
+private void prompt_modify_common_data(string|function wf_src,object ob,int create_flag,function finish_cb,object container,string key)/*{{{*/
+{
+	prompt(create_prompt_modify_common_data_widget(wf_src,ob,create_flag,finish_cb,container,key,1));
+
+}/*}}}*/
+PUBLIC workflow_callback(WorkflowRuntime wfrt,Widget w)/*{{{*/
+{
+	if(wfrt->next())
+		wfrt->next()(wfrt);
+	wfrt->advance();
+	cancel_prompt(w,1);
+	refresh();
+}/*}}}*/
+void delete_common_data(object ob)/*{{{*/
+{
+	if(COMMON_DATA_WRITEABLEP(ob,ob->father,ob->fullpath[-1])){
+		ob->remove();
+	}else{
+		throw(UserException("没有权限",backtrace()));
+	}
+}/*}}}*/
+void copy_common_data(object container,object ob)/*{{{*/
+{
+	prompt_modify_common_data(COMMON_DATA_WFSRC,ob,1,COMMON_DATA_CREATE_OBJECT,container,ob->fullpath[-1]);
+}/*}}}*/
+#ifdef COMMON_DATA_CREATE_WIDGET_HEADER 
+WIDGET_MAPPING look_item(string key1,mixed ... subpath)
+{
+	mapping res=([]);
+	foreach(COMMON_DATA_OWNERS_RW+COMMON_DATA_OWNERS_RO,[string key,object container,string common_data_key]){
+		if(container){
+			if(subpath&&sizeof(subpath)){
+			werror("h0\n");
+				container=query(container->fullpath+({container->key})+subpath);
+			}
+			werror("h1\n");
+			werror("COMMON_DATA_CLASS=%O\n",COMMON_DATA_CLASS);
+			werror("key1=%O\n",key1);
+			werror("container=%O\n",container->data);
+			object item=dbase_find(COMMON_DATA_CLASS,key1,container);
+			if(item){
+			werror("h2\n");
+				object ob=item;
+				Widget w=create_prompt_modify_common_data_widget(COMMON_DATA_WFSRC,ob,0,COMMON_DATA_CREATE_OBJECT,ob->father,ob->fullpath[-1],0);
+				/*string s=container->key;
+				#ifdef COMMON_DATA_HEXKEY
+					s=String.hex2string((container->key/".")[0]);
+				#endif
+				*/
+				res[key]=w->set_namecn(key1);
+			}
+		}
+	}
+	werror("look_item: %O\n",res);
+	return res;
+}
+WIDGET_MAPPING look(mixed ... subpath)
+{
+	return look_internal(0,0,0,0,@subpath);
+}
+WIDGET_MAPPING look_with_filter(string _filtertable,string _filterkey,string _filterval,string sort_keys,mixed ... subpath)
+{
+	if(_filtertable=="") _filtertable=0;
+	if(_filterkey=="") _filterkey=0;
+	if(_filterval=="") _filterval=0;
+	if(sort_keys=="") sort_keys=0;
+	return look_internal(_filtertable,_filterkey,_filterval,sort_keys,@subpath);
+}
+
+string filtertable,filterkey,filterval;
+array sort_keys;
+mapping look_internal(string _filtertable,string _filterkey,string _filterval,string _sort_keys,mixed ... subpath)
+{
+	filtertable=_filtertable;filterkey=_filterkey;filterval=_filterval;
+	if(_sort_keys)
+		sort_keys=_sort_keys/",";
+	else
+		sort_keys=0;
+	werror("look_internal: %O %O %O %O\n",filtertable,filterkey,filterval,_sort_keys);
+	mapping res=([]);
+	foreach(COMMON_DATA_OWNERS_RW,[string key,object container,string common_data_key]){
+		if(container){
+			if(subpath&&sizeof(subpath)){
+				//object c0=container;
+				//m_delete(c0->data[subpath[0]],"_id_");
+				//werror("subpath=%O",subpath);
+				//werror("fullpath=%O",c0->fullpath+({c0->key})+subpath);
+				//werror("%O",c0->data);
+				container=query(container->fullpath+({container->key})+subpath);
+				/*if(container==0){
+					werror("subpath=%O",subpath);
+					werror("fullpath=%O",c0->fullpath+({c0->key})+subpath);
+					werror("%O",object_program(c0));
+					werror("%O",c0->data);
+					werror("%O",c0->common_data_classes);
+				}*/
+
+			}
+			int|function height=COMMON_DATA_PROMPTPANEL_HEIGHT;
+			if(functionp(height)){
+				height=height(container,common_data_key);
+			}
+			Widget w=infinite_list(container->fullpath+({container->key,common_data_key}),30,
+					Function.curry(COMMON_DATA_CREATE_WIDGET_HEADER)(container,common_data_key),
+					COMMON_DATA_CREATE_WIDGET,
+					LIST_HEIGHT,
+					LIST_HEADER_LINE_HEIGHT,
+					LIST_FOOTER_LINE_HEIGHT,
+					0,
+
+				#ifdef COMMON_DATA_WRITEABLEP2
+					COMMON_DATA_WRITEABLEP2(0,container,common_data_key)?
+					([
+					 "删除":({delete_common_data,(["type":"delete"])}),
+					 "复制":({Function.curry(copy_common_data)(container),(["type":"single"])}),
+					 #ifdef COMMON_DATA_HISTORY_TABLE 
+					 "改动记录":({lambda(object ob){command("frame.push_view",({"workflow.look_running_account","default",COMMON_DATA_HISTORY_TABLE,String.string2hex(COMMON_DATA_HISTORY_KEY(ob)),container->key}));},(["type":"single"])}),
+					 #endif
+					 ])
+					 :([])
+				 #else
+					 ([
+					 "删除":({delete_common_data,(["type":"delete"])}),
+					 "复制":({Function.curry(copy_common_data)(container),(["type":"single"])}),
+					 #ifdef COMMON_DATA_HISTORY_TABLE 
+					 "改动记录":({lambda(object ob){command("frame.push_view",({"workflow.look_running_account","default",COMMON_DATA_HISTORY_TABLE,String.string2hex(COMMON_DATA_HISTORY_KEY(ob)),container->key}));},(["type":"single"])}),
+					 #endif
+					 ])
+				 #endif
+					 ,
+				#ifdef COMMON_DATA_WRITEABLEP2
+					COMMON_DATA_WRITEABLEP2(0,container,common_data_key)?
+					([
+					 "新建":Function.curry(prompt_modify_common_data)(COMMON_DATA_WFSRC,0,1,COMMON_DATA_CREATE_OBJECT,container,common_data_key),
+					 ])
+					 :([])
+				#else
+					([
+					 "新建":Function.curry(prompt_modify_common_data)(COMMON_DATA_WFSRC,0,1,COMMON_DATA_CREATE_OBJECT,container,common_data_key),
+					 ])
+				#endif
+					 ,0,0,height
+					);
+			array a=({horizontal_panel()->set_height(LIST_HEADER_LINE_HEIGHT)});
+			#ifdef COMMON_DATA_SHORTCUT_WIDTH
+				#ifdef COMMON_DATA_USING_LABELS
+					foreach(common_data_labels,mapping m){
+						string s=(m->_id_/"-")[1];
+						a+=({button(s,join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,m->_id_})," "))->set_height(LIST_HEIGHT-LIST_HEADER_LINE_HEIGHT,100/max(sizeof(common_data_labels),24))->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+					}
+				#else
+					for(int i='A';i<='Z';i++){
+						a+=({button(sprintf("%c",i),join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,"group-"+lower_case(sprintf("%c",i))})," "))->set_height(16)->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+					}
+				#endif
+			#endif
+			string s=container->key;
+			#ifdef COMMON_DATA_HEXKEY
+				s=String.hex2string((container->key/".")[0]);
+			#endif
+			res[key]=horizontal_panel(({w,
+						#ifdef COMMON_DATA_SHORTCUT_GAP
+							horizontal_panel()->set_width(COMMON_DATA_SHORTCUT_GAP),
+						#endif
+						#ifdef COMMON_DATA_SHORTCUT_WIDTH
+							vertical_panel(a)->set_width(COMMON_DATA_SHORTCUT_WIDTH),
+						#endif
+				}))->set_namecn(s);
+		}
+	}
+	foreach(COMMON_DATA_OWNERS_RO,[string key,object container,string common_data_key]){
+		if(container){
+			if(subpath&&sizeof(subpath)){
+				container=query(container->fullpath+({container->key})+subpath);
+			}
+			int|function height=COMMON_DATA_PROMPTPANEL_HEIGHT;
+			if(functionp(height)){
+				height=height(container,common_data_key);
+			}
+			Widget w=infinite_list(container->fullpath+({container->key,common_data_key}),30,
+					Function.curry(COMMON_DATA_CREATE_WIDGET_HEADER)(container,common_data_key),
+					COMMON_DATA_CREATE_WIDGET,
+					LIST_HEIGHT,
+					LIST_HEADER_LINE_HEIGHT,
+					LIST_FOOTER_LINE_HEIGHT,
+					0,
+					([
+					 ])
+					 ,
+					0,0,0,height
+					);
+			array a=({horizontal_panel()->set_height(LIST_HEADER_LINE_HEIGHT)});
+			#ifdef COMMON_DATA_SHORTCUT_WIDTH
+				#ifdef COMMON_DATA_USING_LABELS
+					foreach(common_data_labels,mapping m){
+						string s=(m->_id_/"-")[1];
+						a+=({button(s,join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,m->_id_})," "))->set_height(16)->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+					}
+				#else
+				for(int i='A';i<='Z';i++){
+					a+=({button(sprintf("%c",i),join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,"group-"+lower_case(sprintf("%c",i))})," "))->set_height(16)->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+				}
+				#endif
+			#endif
+			string s=container->key;
+			#ifdef COMMON_DATA_HEXKEY
+				s=String.hex2string((container->key/".")[0]);
+			#endif
+			res[key]=horizontal_panel(({w,
+						#ifdef COMMON_DATA_SHORTCUT_GAP
+							horizontal_panel()->set_width(COMMON_DATA_SHORTCUT_GAP),
+						#endif
+						#ifdef COMMON_DATA_SHORTCUT_WIDTH
+							vertical_panel(a)->set_width(COMMON_DATA_SHORTCUT_WIDTH),
+						#endif
+				}))->set_namecn(s);
+		}
+	}
+	return res;
+}
+#endif
+
+WIDGET_MAPPING look_select_common_data_items(int multi,string key,multiset begin_set,function finish_cb,mixed ... subpath)
+{
+#ifdef COMMON_DATA_HEXKEY
+	multiset begin_set1=map(begin_set,String.string2hex);
+#else
+	multiset begin_set1=begin_set;
+#endif
+	foreach(COMMON_DATA_OWNERS_RW+COMMON_DATA_OWNERS_RO,[string key0,object container,string common_data_key]){
+		werror("key0=%O\n",key0);
+		werror("key=%O\n",key);
+		if(key0==key){
+			if(subpath&&sizeof(subpath)){
+				container=query(container->fullpath+({container->key})+subpath);
+
+			}
+			int|function height=COMMON_DATA_PROMPTPANEL_HEIGHT;
+			if(functionp(height)){
+				height=height(container,common_data_key);
+			}
+			array all=dbase_query(this_session()->globald,container->fullpath+({container->key,common_data_key}));
+			multiset mm=(<>);
+			foreach(all;mixed ig;mapping m){
+				werror("m->_id_=%O\n",m->_id_);
+				if(begin_set1[m->_id_]){
+					mm[m->_id_]=1;
+				}
+			}
+			Widget w;
+			w=infinite_list(container->fullpath+({container->key,common_data_key}),30,
+					Function.curry(COMMON_DATA_CREATE_WIDGET_HEADER)(container,common_data_key),
+					COMMON_DATA_CREATE_WIDGET,
+					LIST_HEIGHT,
+					LIST_HEADER_LINE_HEIGHT,
+					LIST_FOOTER_LINE_HEIGHT,
+					0,
+					([
+					 ])
+					 ,
+					 ([
+					 "取消":lambda(){
+						command("frame.pop_view",({}));
+					},
+
+					 "选择完成":({lambda(){
+					 	multiset end_set=(<>);
+						foreach(this_session()->query_selected_items(w);string key;int one)
+						{
+						#ifdef COMMON_DATA_HEXKEY
+							end_set[String.hex2string(key)]=1;
+						#else
+							end_set[key]=1;
+						#endif
+						}
+						command("frame.pop_view",({}));
+
+						finish_cb(begin_set,end_set);
+						},(["type":multi?"normal":"single"])})
+					  ]),
+					 0,0,height,mm
+					);
+			array a=({horizontal_panel()->set_height(LIST_HEADER_LINE_HEIGHT)});
+			#ifdef COMMON_DATA_SHORTCUT_WIDTH
+				#ifdef COMMON_DATA_USING_LABELS
+					foreach(common_data_labels,mapping m){
+						string s=(m->_id_/"-")[1];
+						a+=({button(s,join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,m->_id_})," "))->set_height(16)->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+					}
+				#else
+					for(int i='A';i<='Z';i++){
+						a+=({button(sprintf("%c",i),join(({"_infinite_scroll_locate_",query_scroll_panel(w)->id,"group-"+lower_case(sprintf("%c",i))})," "))->set_height(16)->set_width(COMMON_DATA_SHORTCUT_WIDTH)});
+					}
+				#endif
+			#endif
+			mapping res=([]);
+			string s=container->key;
+			#ifdef COMMON_DATA_HEXKEY
+				s=String.hex2string((container->key/".")[0]);
+			#endif
+			res[key]=horizontal_panel(({w,
+						#ifdef COMMON_DATA_SHORTCUT_GAP
+							horizontal_panel()->set_width(COMMON_DATA_SHORTCUT_GAP),
+						#endif
+						#ifdef COMMON_DATA_SHORTCUT_WIDTH
+							vertical_panel(a)->set_width(COMMON_DATA_SHORTCUT_WIDTH),
+						#endif
+				}))->set_namecn(s);
+			return res;
+		}
+	}
+}

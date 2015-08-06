@@ -1,0 +1,28 @@
+
+				if(val.is_matrix_type()&&val.builtin_type()==btyp_double){
+					P{
+						Matrix m=Matrix();
+						m->p=POINTER{new Matrix(val.matrix_value())};
+						res+=({m});
+					}
+				}else if(val.is_matrix_type()&&val.builtin_type()==btyp_float){
+					P{
+						FloatMatrix m=FloatMatrix();
+						m->p=POINTER{new FloatMatrix(val.matrix_value())};
+						res+=({m});
+					}
+				}else if(!val.is_matrix_type()&&val.is_real_scalar()){
+					P{
+						res+=({FLOAT{val.scalar_value()}});
+					}
+				}else if(!val.is_matrix_type()&&val.is_integer_type()){
+					P{
+						res+=({INT{val.long_value()}});
+					}
+				}else{
+					P{
+						octave_value v=octave_value();
+						v->p=POINTER{new octave_value(val)};
+						res+=({v});
+					}
+				}

@@ -1,0 +1,561 @@
+#line 20 "/home/work/PikeBox/project/bityuan/feature/dbaseitem.pike"
+IMPORT(F_HANDLE_PROTOTYPE);
+IMPORT(F_COMMONITEM);
+
+mapping type2resolver=([]);
+mapping type2dbasepath=([ARGTYPE(Root):({({GLOBALD,({"/"}),Root})})]);
+mapping type2subpathmap=([]);
+mapping data2object=set_weak_flag(([]),Pike.WEAK);
+void register_dbase_item_map(object dbase,string curr_namespace,array path,mixed t,program p)/*{{{*/
+{
+if(dbase){
+type2dbasepath[t]=type2dbasepath[t]||({});
+if(path[0]=="/")
+type2dbasepath[t]=({({dbase,path,p})});
+else if(curr_namespace)
+type2dbasepath[t]=({({dbase,({"/",curr_namespace})+path,p})});
+else{
+werror("Error: curr_namespace is 0.\n");
+ABORT();
+}
+}
+}/*}}}*/
+void register_dbase_subitem_map(mixed t0,array path,mixed t,program p0/*,int loopflag*/)/*{{{*/
+{
+/*if(loopflag){
+loopflags[t]=1;
+}*/
+//werror("register_dbase_subitem_map:%O %O %O\n",t0,path,t);
+/*if(search(sprintf("%O",t0),"Candidate")>=0&&search(sprintf("%O",t),"SubCom")>=0){
+ABORT();
+}*/
+type2subpathmap[t0]=type2subpathmap[t0]||([]);
+/*if(type2subpathmap[t0][encode_value_canonic(path)]){
+werror("ERROR: %O %O %O\n",t0,path,type2subpathmap[t0][encode_value_canonic(path)]);
+werror("ERROR: %O %O %O\n",t0,path,t);
+}*/
+array p=path;
+ASSERT(type2subpathmap[t0][encode_value_canonic(p)]==0||type2subpathmap[t0][encode_value_canonic(p)][0]==t);
+type2subpathmap[t0][encode_value_canonic(p)]=({t,p0});
+
+/*
+if(type2dbasepath[t0]){
+type2dbasepath[t]=type2dbasepath[t]||({});
+foreach(type2dbasepath[t0],array a){
+type2dbasepath[t]+=({({a[0],a[1]+({"*"})+path,p})});
+}
+}else{
+werror("Warning: father type %O not found.\n",t0);
+}
+*/
+}/*}}}*/
+
+object dbase_find(program p,string key,object|void father){/*{{{*/
+if(p.is_typeitem&&father==0)
+return 0;
+if(p.is_typeitem)
+ASSERT(father);
+else
+ASSERT(father==0);
+object res;
+if(father)
+res=p(father,key,1);
+else
+res=p(key,1);
+//if(res->data==0)
+//werror("INFO: dbase_find: %s data==0\n",key);
+if(res->data){
+if(data2object[res->data]==0){
+ASSERT(objectp(res));
+data2object[res->data]=res;
+}
+ASSERT(data2object[res->data]->data);
+return data2object[res->data];
+}
+}/*}}}*/
+mapping find_type(object dbase,array path0)/*{{{*/
+{
+ASSERT(dbase==GLOBALD);
+
+array path=({});
+foreach(path0,string|array a){
+if(stringp(a)){
+path+=({a});
+}else{
+path+=a[0..0];
+}
+}
+
+
+mapping res=([]);
+werror("%O",type2dbasepath);
+foreach(type2dbasepath;mixed t;array a){
+//werror("a=%O",a);
+foreach(a,[object dbase1,array path1,program p0]){
+object ob;
+//werror("find_type: path1=%s\n",combine_path(@path1));
+//werror("find_type: path =%s\n",combine_path(@path));
+if(dbase1==dbase&&equal(path1,path[..sizeof(path1)-1])){
+werror("found base type %O\n",t);
+mixed p=t;
+array r=path[sizeof(path1)..];
+int fail;
+while(sizeof(r)>1){
+if(stringp(r[0])){
+//werror("constuct %O(%O)\n",p0,r[0]);
+ob=p0(r[0],1);
+if(ob&&ob->data){
+if(data2object[ob->data]){
+ob=data2object[ob->data];
+}else{
+ASSERT(objectp(ob));
+data2object[ob->data]=ob;
+}
+mapping subpathmap=type2subpathmap[p];
+werror("%O",subpathmap);
+string k=encode_value_canonic(({r[1]}));
+werror("check %s of %O\n",r[1],p);
+if(subpathmap&&subpathmap[k]){
+werror("check %s ok\n",r[1]);
+p=subpathmap[k][0];
+p0=Function.curry(subpathmap[k][1])(ob);
+r=r[2..];
+}else{
+werror("check %s fail\n",r[1]);
+fail=1;
+r=r[2..];
+break;
+}
+}else{
+ob=0;
+fail=1;
+break;
+}
+}else{
+break;
+}
+}
+if(sizeof(r)==0){
+if(!fail){
+werror("return base type\n");
+res[p]=({p0,ob});
+werror("res=%O\n",res);
+}else if(ob){
+werror("return father object\n");
+res[p]=({0,ob});
+}
+}else{
+werror("sizeof(r)=%d\n",sizeof(r));
+werror("r=%O\n",r);
+}
+}
+}
+}
+return res;
+}/*}}}*/
+
+mapping dbase_fullpath_refcount=([]);
+
+int dbaseitem_count;
+
+void werror_dbaseitem_count()
+{
+/*if(GLOBALD->sessions["stdin"]){
+ENTER(GLOBALD->sessions["stdin"]);
+this_session()->dbase_query(GLOBALD,({"/","users","users","admin"}));
+LEAVE();
+}*/
+//gc();
+werror("dbaseitem_count=%d\n",dbaseitem_count);
+call_out(werror_dbaseitem_count,5);
+}
+
+void create()
+{
+::create();
+//werror_dbaseitem_count();
+}
+/*
+private void itemsave(object session,object dbase,array fullpath,object db,string key,int|void force_save)
+{
+ENTER(session);
+//dbase->clear_functions(fullpath);
+if(dbase_fullpath_refcount[dbase][encode_value_canonic(fullpath+({key}))]==0||force_save){
+mixed v=dbase->query(fullpath+({key}));
+if(v){
+werror("save... %s\n",key);
+db[key]=encode_value(v,codec);
+dbase->delete(fullpath+({key}));
+}
+if(dbase_fullpath_refcount[dbase][encode_value_canonic(fullpath+({key}))]==0)
+m_delete(dbase_fullpath_refcount[dbase],encode_value_canonic(fullpath+({key})));
+//XXX: when will we do m_delete if force_save?
+}else{
+call_out(itemsave,5,session,dbase,fullpath,db,key);
+}
+LEAVE();
+}
+*/
+
+CLASS DbaseItem{
+inherit "dbase.pike";
+inherit f_handle_prototype::Common;
+
+object _dbase;
+array _path;
+string key;
+array fullpath;
+int `==(DbaseItem rhd){/*{{{*/
+if(objectp(rhd)){
+if(rhd->_dbase==_dbase&&equal(rhd->fullpath,fullpath)&&rhd->key==key)
+return 1;
+}
+}/*}}}*/
+protected int nocreate;
+
+void create(object|function dbase,string curr_namespace, array path, string _key,int _nocreate,mapping|void init_data)
+{
+//ASSERT(functionp(dbase));
+if(functionp(dbase))
+dbase=dbase();
+::create();
+_dbase=dbase;
+_path=path;
+key=_key;
+nocreate=_nocreate;
+
+if(_path[0]=="/")
+fullpath=_path;
+else
+fullpath=({"/",curr_namespace})+_path;
+mixed m=dbase_query(_dbase,fullpath);
+mixed data0=data=array_query(m,key);
+MODULED->apply_function(this,"init_dbaseitem",init_data);
+if(!nocreate)
+ASSERT(data);
+dbaseitem_count++;
+}
+void remove()
+{
+ASSERT(cache_level()==0);
+foreach((HANDLE_PROTOTYPED->program2on_remove[object_program(this)]||({})),function on_remove){
+on_remove(this);
+}
+if(this->on_remove)
+this->on_remove();
+//_dbase->delete(fullpath+({key}));
+dbase_delete(_dbase,fullpath+({key}));
+data=0;
+}
+void destroy()
+{
+//werror("dbaseitem destroy\n");
+if(global::this)
+dbaseitem_count--;
+}
+}
+
+CLASS TypeItem{
+inherit "dbase.pike";
+inherit f_handle_prototype::Common;
+constant is_typeitem=1;
+
+object _dbase;
+array `fullpath()/*{{{*/
+{
+return father->fullpath+({father->key})+(subpath||({}));
+};/*}}}*/
+string key;
+array subpath;
+protected int nocreate;
+object father;
+int equal_internal(TypeItem rhd)
+{
+return rhd->key==key&&objectp(rhd->father)&&objectp(father)&&rhd->father->equal_internal(rhd->father,father);
+}
+int `==(TypeItem rhd){/*{{{*/
+if(objectp(rhd)&&object_program(rhd)==this_program&&rhd->_dbase==_dbase){
+return equal_internal(rhd);
+//return equal(({_dbase,fullpath,key}),({rhd->_dbase,rhd->fullpath,rhd->key}));
+//if(rhd->data==data||rhd->_dbase==_dbase&&equal(rhd->fullpath,fullpath)&&rhd->key==key)
+//return 1;
+}
+}/*}}}*/
+void create(array _subpath,object ob,string _key,int _nocreate,mapping|void init_data)/*{{{*/
+{
+/*if(_key=="haha"){
+werror("create haha: father->data=%O\n",ob->data);
+werror("create haha: _subpath=%O\n",_subpath);
+werror("create haha: _key=%O\n",_key);
+}*/
+key=_key;
+nocreate=_nocreate;
+father=ob;
+::create();
+subpath=_subpath[0..0];
+//fullpath=ob->fullpath+({ob->key})+subpath;
+_dbase=ob->_dbase;
+/*if(objectp(ob->data[_subpath[0]])){
+ASSERT_TRUE(sizeof(subpath)==2,"virtual subpath without a shadow.");
+}*/
+ASSERT(sizeof(_subpath)==1||sizeof(_subpath)==2);
+mixed data0;
+if(father==root){
+data0=data=array_query(father->data[_subpath[0]],key);
+}else{
+if(sizeof(_subpath)==1){
+data0=data=array_query(father->`->(_subpath[0]),key);
+}else{
+data0=data=array_query(father->`->(_subpath[0]),key)
+||array_query(father->`->(_subpath[1]),key)
+;
+}
+}
+/*if(_key=="haha"){
+ASSERT(data!=0);
+}*/
+//data=father->`->(key);
+//data=_dbase->query(fullpath+({key}));
+MODULED->apply_function(this,"init_dbaseitem",init_data);
+if(!nocreate)
+ASSERT(data);
+dbaseitem_count++;
+}/*}}}*/
+void move(object new_father)
+{
+if(data2object[new_father->data]){
+new_father=data2object[new_father->data];
+}
+ASSERT(data);
+dbase_delete(_dbase,fullpath+({key}));
+dbase_set(_dbase,new_father->fullpath+({new_father->key})+subpath+({key}),data);
+/*
+mixed a=father->`->(subpath[0]);
+if(arrayp(a)||objectp(a)&&a->`[..]){
+a-=({data});
+}else if(mappingp(a)||objectp(a)&&a->_m_delete){
+m_delete(a,data->_id_);
+}
+a=new_father->`->(subpath[0]);
+if(arrayp(a)||objectp(a)&&a->`[..]){
+a+=({data});
+}else if(mappingp(a)||objectp(a)&&a->_m_delete){
+a[data->_id_]=data;
+}
+*/
+father=new_father;
+//_fullpath=0;
+if(data2object[data]&&data2object[data]!=this){
+data2object[data]->father=new_father;
+}
+}
+void save()
+{
+werror("SAVE\n");
+dbase_set(_dbase,fullpath+({key}),data);
+werror("SAVE DONE\n");
+}
+void remove()
+{
+ASSERT(cache_level()==0);
+//_dbase->delete(fullpath+({key}));
+foreach((HANDLE_PROTOTYPED->program2on_remove[object_program(this)]||({})),function on_remove){
+on_remove(this);
+}
+if(this->on_remove)
+this->on_remove();
+MODULED->apply_function(this,"handle_remove");
+dbase_delete(_dbase,fullpath+({key}));
+ASSERT(dbase_query(_dbase,fullpath+({key}))==0);
+data=0;
+}
+void destroy()
+{
+//werror("dbaseitem destroy\n");
+if(global::this)
+dbaseitem_count--;
+}
+}
+
+private mixed _dbase_query(object dbase,array key)
+{
+//werror("_dbase_query %O\n",key);
+//werror("%s",key*"/");
+//werror("try father->subpath\n");
+//werror("%s",key*"/");
+//werror("find_type1 %O\n",key);
+mapping m=find_type(GLOBALD,key);
+//werror("%O",key);
+//werror("m1=%O\n",m);
+if(m){
+foreach(m;mixed t;[program pp,object father] ){
+if(father){
+mixed res=father->`->(key[-1]);
+if(res){
+//werror("%s",key*"/");
+//werror("using father->\n");
+//werror("%s",key*"/");
+//werror("_dbase_query return %O\n",res);
+return res;
+}else{
+//werror("%s",key*"/");
+//werror("using father->data[]\n");
+//werror("%s",key*"/");
+//werror("_dbase_query return %O\n",father->data[key[-1]]);
+return father->data[key[-1]];
+}
+}
+}
+}
+//werror("%s",key*"/");
+//werror("father->subpath not works, try subclass(father,1)\n");
+//werror("%s",key*"/");
+//werror("find_type2 %O\n",key[..<1]);
+m=find_type(GLOBALD,key[..<1]);
+//werror("%s",key*"/");
+//werror("m2=%O\n",m);
+if(m){
+foreach(m;mixed t;[program pp,object father] ){
+if(pp){
+object res=pp(key[-1],1);
+//werror("test3: %t of %O father=%O\n",res,key,father?father->fullpath+({father->key}):"nofather");
+if(res->data){
+//werror("%s",key*"/");
+//werror("_dbase_query return %t\n",res);
+return res;
+}else{
+//werror("%s",key*"/");
+//werror("_dbase_query return %O\n",0);
+return UNDEFINED;
+}
+}
+}
+}
+//werror("%s",key*"/");
+//werror("subclass(father,1) not works, try dbase->query(key)\n");
+mixed v=dbase->query(key);
+////werror("using dbase->query\n");
+if(objectp(v)&&object_program(v)==Func){
+throw(({"Father of Func is not a object.",backtrace()}));
+//return v(key[-2],dbase_query(dbase,key[..<1]),key[..<1],dbase);
+}else{
+//werror("%s",key*"/");
+//werror("_dbase_query return %O\n",v);
+return v;
+}
+}
+mixed dbase_query(object dbase,array key){
+
+if(equal(key,({"/",""}))) key=key[..<1]; //fix explode_path("/") == ({"/",""});
+
+mixed val;
+if(Array.all(key,stringp))
+val=dbase->query(key);
+if(val){
+//werror("dbase[%O]=%O\n",key,val);
+if(data2object[val]==0){
+mixed vv=_dbase_query(dbase,key);
+//werror("_dbase_query %O return %t\n",key,vv);
+if(objectp(vv))
+data2object[val]=vv;
+else
+return vv; //XXX: cache the non object vv
+}
+return data2object[val];
+}else{
+mixed vv=_dbase_query(dbase,key);
+//werror("_dbase_query2 %O return %t\n",key,vv);
+return vv;
+}
+}
+private mixed dbase_mixed_set(mixed m,string key,mixed val)
+{
+//werror("dbase_father_set\n");
+if(objectp(m)&&m->_m_delete){
+m[key]=val;
+//werror("dbase_father_set %O -> %O\n",key,m[key]);
+}else if(objectp(m)&&m->`[..]){
+m+=({val});
+}else{
+array_set(m,key,val);
+}
+return val;
+}
+mixed dbase_father_set(object father,string subpath,string key,mixed val)
+{
+mixed m=father->`->(subpath);
+if(arrayp(m)){
+father->`->=(subpath,m+({val}));
+}else{
+dbase_mixed_set(m,key,val);
+}
+return val;
+}
+mixed dbase_set(object dbase,array key,mixed val)
+{
+if(sizeof(key)&&key[-1]=="") key=key[..<1]; //fix explode_path("/") == ({"/",""});
+mixed m=dbase_query(dbase,key[..<1]);
+if(m){
+if(objectp(m)&&m->is_dbase){
+m=m->data;
+}
+if(arrayp(m)){
+dbase_set(dbase,key[..<1],m+({val}));
+}else{
+dbase_mixed_set(m,key[-1],val);
+}
+}else{
+dbase->set(key,val);
+}
+return val;
+}
+mixed dbase_delete(object dbase,array key){
+mixed m=dbase_query(dbase,key[..<1]);
+mixed res;
+if(m){
+if(objectp(m)&&m->is_dbase){
+m=m->data;
+}
+if(arrayp(m)){
+/*if(m[0]==0){
+werror("%O",dbase_query(dbase,key[..<2])->data);
+}
+ASSERT(m[0]);
+*/
+res=array_query(m,key[-1]);
+dbase_set(dbase,key[..<1],m-({res}));
+}else if(objectp(m)&&m->_m_delete){
+m_delete(m,key[-1]);
+}else if(objectp(m)&&m->`[..]){
+ABORT();
+}else{
+res=m_delete(m,key[-1]);
+}
+}
+return res;
+}
+/*BigArray bigarray(object ob,string key) //BigArray 还不Work，需要上SQL
+{
+object db=LOAD_GDBMD->load_gdbm(Stdio.append_path("var","bigarray-"+String.string2hex(Stdio.append_path_unix(@(ob->fullpath+({key}))))+".db"));
+return BigArray(db,"size");
+}*/
+
+
+class Root{
+inherit DbaseItem;
+class ProtoType{}
+void create(string key,int|void nocreate){
+ASSERT(key=="root");
+::create(GLOBALD,0,({"/"}),key,nocreate);
+//ASSERT(root==0);
+}
+void destroy()
+{
+::destroy();
+}
+mapping `type_resolver(){mapping res=map(type2resolver[ARGTYPE(Root)]||([]),lambda(function f){/*werror("this=%O\n",this);*/return Function.curry(f)(this);} );
+//werror("type_resolver of root: %O\n",res);
+return res;};
+}
+object root=Root("root");
+

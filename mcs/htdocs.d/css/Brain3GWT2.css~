@@ -1,0 +1,90 @@
+button { text-align:center; }
+/*table,td,th {
+	margin:0px;
+	border:0px;
+	padding:0px;
+}*/
+
+body {
+/*	overflow-x:scroll;
+	overflow-y:scroll;*/
+}
+
+
+.banner { 
+	/* Firefox 3.6 */ 
+	background-image: -moz-linear-gradient(top, #c4ddff, #f8f8f8);
+
+	/* Safari & Chrome */ 
+	background-image: -webkit-gradient(linear,left bottom,left top,color-stop(0, #c4ddff),color-stop(1, #f8f8f8));
+
+	/* IE6 & IE7 */ 
+	filter:  progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#c4ddff', endColorstr='#f8f8f8');
+
+	/* IE8 */ 
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#c4ddff', endColorstr='#f8f8f8')";
+}
+
+.pikecross-Field
+{
+	margin:0px;
+	border:0px;
+	padding:0px;
+	color:black;
+	background:#f8f8f8;
+}
+.test
+{
+	background:red;
+}
+
+#start {
+	background:#f8f8f8;
+}
+
+.selected {
+	background-color:#c4ddff;
+}
+
+.selected .pikecross-Field
+{
+	margin:0px;
+	border:0px;
+	padding:0px;
+	color:black;
+	background:#c4ddff;
+}
+
+.group_label {
+	background-color:#fefefe;
+}
+
+.item {
+	cursor:pointer;
+}
+
+.path {
+	cursor:pointer;
+	text-decoration:underline;
+}
+
+.item .pikecross-Field{
+	cursor:pointer
+}
+
+.sortable .pikecross-Field{
+	cursor:pointer;
+}
+
+.submenu {
+	background:#c4ddff;
+}
+.submenu button{
+	background:#c4ddff;
+}
+
+.menu{
+}
+
+.gwt-Button{
+}
