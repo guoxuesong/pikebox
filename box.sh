@@ -4,7 +4,7 @@ if test -a ~/PikeBox/box.rc ; then
 elif test -a ~/PikeBox/box.rc.example ; then
 	cp ~/PikeBox/box.rc.example ~/PikeBox/box.rc
 else
-	echo You should move PikeBox dir to ~/PikeBox
+	echo You should locate your pikebox dir to ~/PikeBox
 	exit
 fi
 mkdir ~/PikeBox/tmp 2>/dev/null

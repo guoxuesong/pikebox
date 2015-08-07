@@ -3,9 +3,9 @@
 ## Features
 
 * Class template and static data
-* Some useful modules for pike
-* Support in-line C/Java code in pike, AKA spear.
 * Multi-class template, AKA MCS.
+* Support in-line C/Java code in pike, AKA spear.
+* Some useful modules for pike or spear
 * Some tools to make coding easier, run box.sh.
 
 ## Class template and static data
@@ -93,7 +93,6 @@ We handle the changes this way:
 ```
 class CountWords{
 	string data="";
-	int n;
 	object feed(string s){
 		data+=s;
 		return this;
@@ -114,7 +113,6 @@ class CountWordsMode{
 	}
 	class CountWords{
 		string data="";
-		int n;
 		object feed(string s){
 			data+=s;
 			return this;
@@ -125,7 +123,6 @@ class CountWordsMode{
 	}
 	class CountWordsA{
 		string data="";
-		int n;
 		object feed(string s){
 			data+=s;
 			return this;
@@ -173,21 +170,103 @@ class CountWordsMode{
 program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsB);
 ```
 
-* withdraw the second idea
-
-```
-//program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsA);
-//program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsB);
-program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWords);
-```
+* withdraw idea A, just delete CountWordsMode.CountWordsA
 
 Apply idea B on the original idea is simple, but if we want to apply idea B on
 idea A, it is complicated. This is a good example shows that some ideas are not
-compatable with each other, if we can not withdraw a bad idea, we may need make
+compatable with each other, if we can not withdraw a bad idea, we may need force
 the good ones compatable with the bad ones, that is expensive.
 
-And, in the real world, we may have severy facets, every facet may have severy
-ideas, that means the ideas change in severy dimensions.  This is more
-complicated.  Using class template feature of PikeBox, we can handle these
-multi-dimension changes appropriately.
+And, in the real world, our project may have severy facets, every facet may
+have severy ideas, that means the ideas change in severy dimensions.  This is
+more complicated.  Using class template feature of PikeBox, we can handle these
+multi-dimension changes appropriately. We can try to split the wc example to
+two facets: the feed facet and count facet:
 
+```
+class CountWordsFeedMode{
+	class Interface{
+		object feed(string s);
+	}
+	class CollectFeed{
+		string data="";
+		object feed(string s){
+			data+=s;
+			return this;
+		}
+	}
+	class FastFeed{
+		int n;
+		int last_is_space=1;
+		object feed(string s){
+			array a;
+			if(last_is_space){
+				a=s/" ";
+			}else{
+				n--;
+				a=("A"+s)/" ";
+			}
+			n+=sizeof(filter(a,sizeof));
+			last_is_space=(sizeof(a[-1])==0);
+			return this;
+		}
+	}
+}
+class CountWordsMode{
+	class Interface{
+		int count();
+	}
+	class FastCount{
+		extern int n;
+		int count(){
+			return n;
+		}
+	}
+	class CountWords{
+		extern string data;
+		int count(){
+			return sizeof(filter(data/" ",sizeof));
+		}
+	}
+	class CountWordsA{
+		extern string data;
+		int count(){
+			return sizeof(filter(Parser.C.split(data),lambda(string s){
+					return sizeof(String.trim_all_whites(s));
+					}))
+		}
+	}
+}
+class CountWordsBase{
+	inherit CountWordsFeedMode.Interface;
+	inherit CountWordsMode.Interface;
+}
+program CountWords0=CLASS(CountWordsBase,CountWordsFeedMode.CollectFeed,CountWordsMode.CountWords);
+program CountWordsA=CLASS(CountWordsBase,CountWordsFeedMode.CollectFeed,CountWordsMode.CountWordsA);
+program CountWordsB=CLASS(CountWordsBase,CountWordsFeedMode.FastFeed,CountWordsMode.FastCount);
+```
+
+Notice CLASS return a program at runtime, that means we can create instance of class template dynamically. Use this feature when you need it.
+
+## MCS
+
+Class template is designed for small project, the source is just one file, and
+act as a pike module. MCS is designed for large project. MCS is multi-class
+template, that means compare with CLASS using one BaseCass, MCS use severy
+base-classes. CLASS apply ideas on the BaseClass, MCS apply features on the
+base-classes.
+
+For exmaple, a online system most likely has severy classes like Session,
+Player, DataBase ... A feature is some relative ideas about these classes,
+these ideas must be applied together, or non of them works. This is a bit like
+CountWordsFeedMode.FastFeed and CountWordsMode.FastCount.
+
+For historical reason, MCS not use class template, they are independence. But
+since class template impliments a pike module, you can use this module in your
+MCS project.
+
+See mcs/lineserver.pike for a example, mcs/awlserver.pike is more useful one.
+
+MCS keywords: IMPORT CLASS ITEM MIXIM
+
+More MCS documents come later.
