@@ -1,13 +1,35 @@
-The main reason to create PikeBox is the DynClass idea.
+# PikeBox
 
-Just do this:
+## Features
 
-sh box.sh
-home
-vi systems/MyProj.pmod
+* Class template and static data
+* Some useful modules for pike
+* Support in-line C/Java code in pike, AKA spear.
+* Multi-class template, AKA MCS.
+* Some tools to make coding easier, run box.sh.
 
-You get this:
+## Class template and static data
 
+This feature is designed to handle always-changing project. A always-changing
+project is a project:
+
+* always changes,
+* you do not have a final design for it,
+* you want to change from one idea to another as smoothly as posible,
+* you want withdraw your change as smoothly as posible.
+
+How to do this:
+
+* enter PikeBox run "sh box.sh; home;"
+* run "vi systems/MyProj.pmod" to create your project named "MyProj"
+* edit your project in vim, using class template and static data feature
+* run your project with "run MyProj [ARGS]".
+
+Following is how to use class template and static data feature in your code:
+
+* "vi systems/MyProj.pmod" will create a empty project for you
+
+```
 #include <class.h>
 #define CLASS_HOST "MyProj"
 class DynClass{
@@ -47,43 +69,88 @@ int main(int argc,array argv)
 	}
 	HANDLE_ARGUMENTS();
 }
+```
 
-This is a empy application using DynClass, you can using "run MyProj" to run it.How to handle arguments see include/args.h
+* donnot touch the first 5 lines
+* class UniqIDStatic/UniqID is a example showing how to define static data for a class
+* use keyword STATIC(ClassA) to reference the static object of the class ClassA, that is defined at ClassA.Static
+* class MyProj/MyProjMode is a example showing how to define class template
+* use keyword CLASS(BaseCass,ModeClass.FeatureA) to reference a class (as pike program) inheriting BaseCass and ModeClass.FeatureA
+* BaseCass should inherit ModeClass.Interface
+* CLASS can accept more than two arguments, the returned program will inherit all of them, and BaseCass should inherit all Interface of them
 
-Create a project under systems means:
+Following is a example how the idea of a project changes:
 
-* your project always changes,
-* you do not have a final design of it,
-* you want to change from one idea to another as smoothly as posible.
+* we need a class to count words, wc -w style, this is original idea
+* we found out, may be, we need count c-string as a word, for example: "a word"
+* we think the above idea is slow and useless, we want to withdraw the last change
 
-or
+We handle the changes this way:
 
-* you want facet-oriented programming
+* a "wc -w" style count words
 
-Facet-oriented programming means you have some abstract classes A,B,C,... ,
-every abstract class has maybe a large number of implements
-a_1,a_2,...,a_n;b_1,b_2,...,b_m;c_1,c_2,...,c_p;... every combination of them
-is just posible.
+```
+class CountWords{
+	string data="";
+	int n;
+	object feed(string s){
+		data+=s;
+		return this;
+	}
+	int count(){
+		return sizeof(filter(data/" ",sizeof));
+	}
+}
+```
 
-Technological, we just need a C++-template-class-like macro, for example
-CLASS(Base,a_3,b_9,c_6) return a class inherits Base,a_3,b_9 and c_6, Base is a
-class inherits A,B,C.
+* when the second idea appears, we use class template
 
-I will explain why a changing-design project is similar to facet-oriented.
-There are two kind of changes:
+```
+class CountWordsMode{
+	class Interface{
+		object feed(string s);
+		int count();
+	}
+	class CountWords{
+		string data="";
+		int n;
+		object feed(string s){
+			data+=s;
+			return this;
+		}
+		int count(){
+			return sizeof(filter(data/" ",sizeof));
+		}
+	}
+	class CountWords2{
+		string data="";
+		int n;
+		object feed(string s){
+			data+=s;
+			return this;
+		}
+		int count(){
+			return sizeof(filter(Parser.C.split(data),lambda(string s){
+					return sizeof(String.trim_all_whites(s));
+					}))
+		}
+	}
+}
+class CountWordsBase{
+	inherit CountWordsMode.Interface;
+}
+program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWords2);
+```
 
-1) totally change, this is rarely happened, if it happened, backup your project
-and create a new one.
+* withdraw the second idea
 
-2) some parts of some classes changes together, if this happened, split the
-changing part of every class, as a abstract base class, and add two implements
-of it: the one before change, and the one after.
+```
+//program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWords2);
+program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWords);
+```
 
-If a part of a class changes, it always changes again, or changes back. You
-will got a abstract class for the changing part, and a lot of implements for
-every idea.
-
-By name the implements properly, for example a_design1,b_design1,c_desgn1,...
-you can mark what is changed together. By doing a search-replace, you can
-easily switch back to the old design, if the new design not works.
+This example is simple. In the real world, we may have severy facets, every
+facet may have severy ideas, that is the ideas change in severy dimensions,
+this is complicated. Using PikeBox we can handle this changes
+appropriately.
 
