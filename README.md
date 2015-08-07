@@ -7,22 +7,22 @@
 * Support in-line C/Java code in pike, AKA spear.
 * Some useful modules for pike or spear
 * Some tools to make coding easier, run box.sh.
+* AWLServer embeded in Plone.
 
 ## Class template and static data
 
 This feature is designed to handle always-changing project. A always-changing
 project is a project:
 
-* always changes,
 * you do not have a final design for it,
 * you want to change from one idea to another as smoothly as posible,
 * you want withdraw your change as smoothly as posible.
 
-How to do this:
+How to use this:
 
 * enter PikeBox run "sh box.sh; home;"
 * run "vi systems/MyProj.pmod" to create your project named "MyProj"
-* edit your project in vim, using class template and static data feature
+* edit your project in vim, using class template and static data feature, see below
 * run your project with "run MyProj [ARGS]".
 
 Following is how to use class template and static data feature in your code:
@@ -71,11 +71,11 @@ int main(int argc,array argv)
 }
 ```
 
-* donnot touch the first 5 lines
+* do not touch the first 5 lines
 * class UniqIDStatic/UniqID is a example showing how to define static data for a class
 * use keyword STATIC(ClassA) to reference the static object of the class ClassA, that is defined at ClassA.Static
 * class MyProj/MyProjMode is a example showing how to define class template
-* use keyword CLASS(BaseCass,ModeClass.FeatureA) to reference a class (as pike program) inheriting BaseCass and ModeClass.FeatureA
+* use keyword CLASS(BaseCass,ModeClass.FeatureA) to reference a class (return as pike datatype program) inheriting BaseCass and ModeClass.FeatureA
 * BaseCass should inherit ModeClass.Interface
 * CLASS can accept more than two arguments, the returned program will inherit all of them, and BaseCass should inherit all Interface of them
 
@@ -83,7 +83,7 @@ Following is a example how the idea of a project changes:
 
 * we need a class to count words, wc -w style, this is original idea
 * we think, may be, we need count c-string as a word, for example: "a word", this is idea A
-* we improve the wc -c idea, count on feed, improve the performance, this is idea B
+* we improve the wc -c idea, count in feed(), improve the performance, this is idea B
 * we think the idea A is slow and useless, we want to withdraw the idea A
 
 We handle the changes this way:
@@ -173,7 +173,7 @@ program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsB);
 * withdraw idea A, just delete CountWordsMode.CountWordsA
 
 Apply idea B on the original idea is simple, but if we want to apply idea B on
-idea A, it is complicated. This is a good example shows that some ideas are not
+idea A, it is complicated. This is a good example showing that some ideas are not
 compatable with each other, if we can not withdraw a bad idea, we may need force
 the good ones compatable with the bad ones, that is expensive.
 
@@ -270,3 +270,38 @@ See mcs/lineserver.pike for a example, mcs/awlserver.pike is more useful one.
 MCS keywords: IMPORT CLASS ITEM MIXIM
 
 More MCS documents come later.
+
+## AWLServer embedded in Plone
+
+Plone is a great open source CMS system. see http://www.plone.org for more
+information.
+
+AWLServer is GWT-enabled http server included in MCS. We provide method to
+embed AWLServer into Plone:
+
+* Install Plone from mcs/efun.d/plone.d/Plone-4.1.3-UnifiedInstaller.tgz
+* Install Products.windowZ in Plone
+* IMPORT(F_PLONE_LOGIN); in awlserver.pike, do not IMPORT(F_LOGIN);
+* create this_player.py under Plone site in the Zope management interface
+
+```
+# this_player.py
+from Products.PythonScripts.standard import html_quote
+
+request = container.REQUEST
+response =  request.response
+
+from Products.CMFCore.utils import getToolByName
+
+membership = getToolByName(container, 'portal_membership')
+authenticated_user = membership.getAuthenticatedMember().getUserName()
+
+print authenticated_user
+return printed
+```
+
+* start AWLServer under the same domain of plone site, but with different port.
+* create windowZ object in Plone, set the url to http://YOURDOMAIN:AWLPORT/?cmd=MYCMD
+* create MYCMD.pike in mcs/bin to handle the request
+
+A step by step howto comes later.

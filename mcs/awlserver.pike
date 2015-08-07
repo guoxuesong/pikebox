@@ -349,14 +349,14 @@ CLASS RequestHandler{
 			werror("new session\n");
 			sessions[sessionid]=Session(sessionid);
 			//sessions[sessionid]->globald=GLOBALD;
-			if(login_cmd){
-				//sessions[sessionid]->q_out=fake_q_out;
-				mixed e=catch{
-					command(sessions[sessionid],login_cmd/*,mywrite,([]),m->request_headers*/);
-				};
-				if(e){
-					master()->handle_error(e);
-				}
+		}
+		if(login_cmd){
+			//sessions[sessionid]->q_out=fake_q_out;
+			mixed e=catch{
+				command(sessions[sessionid],login_cmd/*,mywrite,([]),m->request_headers*/);
+			};
+			if(e){
+				master()->handle_error(e);
 			}
 		}
 		//sessions[sessionid]->q_out=fake_q_out;
@@ -804,7 +804,8 @@ string my_key = MIME.decode_base64(
 		session->cmd_pos=cmd_pos;
 		if(case_insensitive)
 			session->set_case_insensitive();
-		session->ip=(con->query_address()/" ")[0];
+		if(con->query_address())
+			session->ip=(con->query_address()/" ")[0];
 		session->is_socket_session=1;
 		session->is_client_session=0;
 		session->is_console_session=0;
