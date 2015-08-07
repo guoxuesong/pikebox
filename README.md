@@ -145,6 +145,7 @@ program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsA);
 
 * improve wc -w idea, the idea B
 
+```
 class CountWordsMode{
 	...
 	class CountWordsB{
@@ -170,6 +171,7 @@ class CountWordsMode{
 }
 //program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsA);
 program CountWords=CLASS(CountWordsBase,CountWordsMode.CountWordsB);
+```
 
 * withdraw the second idea
 
